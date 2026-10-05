@@ -18,6 +18,8 @@
 - **发行说明为空时自动改看 CHANGELOG**：打开弹窗那一刻如果集市这一版没有发行说明，
   本次自动切到 CHANGELOG；默认 CHANGELOG 而仓库没有 changelog 时反过来切回发行说明。
   下一次打开仍按设置里的优先来源。
+- **超时快速失败、可以重试**：发行说明与 CHANGELOG 首次加载都是 3 秒超时，超时提示后面带一个
+  「重新获取」链接，点了用 7 秒再试一次。
 - **GitHub 加速开关**：默认只访问 `api.github.com`，需要时在插件设置里手动填一个加速地址并打开开关。
 
 ## 设置
@@ -32,11 +34,12 @@
 ## 数据来源
 
 - **发行说明**：GitHub Releases API（`https://api.github.com/repos/<owner>/<repo>/releases`），
-  最多 100 条，过滤草稿，按发布时间倒序；同一仓库 30 分钟内只请求一次。
+  最多 100 条，过滤草稿，按发布时间倒序；同一仓库 30 分钟内只请求一次。超时的不算失败，
+  仍可点「重新获取」。
 - **CHANGELOG**：`https://cdn.jsdelivr.net/gh/<owner>/<repo>/<path>`，`path` 为
   `CHANGELOG.md`、`docs/CHANGELOG.md`、`doc/CHANGELOG.md` 三个候选**并发**请求，谁先返回 200 就用谁
-  （不带 ref 时 jsDelivr 取仓库默认分支）。三个都 404 提示「这个仓库没有 CHANGELOG」，
-  出现网络错误或整体超过 8 秒则提示超时，并取消还没回来的请求。
+  （不带 ref 时 jsDelivr 取仓库默认分支）。三个都 404 提示「这个仓库没有 CHANGELOG」；
+  超时或请求失败则提示超时并取消还没回来的请求，不会自动换来源 —— 同一条线路慢，换来源也拿不到。
 - **集市最新版本**：内核 `/api/bazaar/getBazaarPackage` 的 `available.version`，
   用来判定「最新」以及过滤掉集市还没检索到的发行版。
 - **Markdown 渲染**：内核 `/api/lute/md2html`，与思源集市 README 同一套 Lute，再用 DOMPurify 消毒。

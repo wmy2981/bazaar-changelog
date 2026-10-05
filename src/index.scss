@@ -37,6 +37,19 @@
     overflow: auto;
     padding: 16px 24px;
   }
+
+  // 超时提示后面的「重新获取」：与正文里的链接同一样式
+  &__retry {
+    background-color: transparent;
+    border: 0;
+    color: var(--b3-theme-primary);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    padding: 0;
+    text-decoration: underline;
+  }
 }
 
 // 集市包详情页「集市信息 - 版本」的值：与同页资源链接同色，做成可点开的按钮。

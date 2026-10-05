@@ -10,7 +10,7 @@
 | --- | --- |
 | `src/index.ts` | 插件入口：读设置、注册设置面板、挂上 DOM 观察与点击拦截，`onunload` 成对清理 |
 | `src/settings.ts` | 设置结构、默认值与 `mergeSettings()` 校验 |
-| `src/github.ts` | GitHub Releases 客户端：仓库地址解析、加速前缀、30 分钟内存缓存 |
+| `src/github.ts` | GitHub Releases 客户端：仓库地址解析、加速前缀、超时、30 分钟内存缓存 |
 | `src/changelog.ts` | jsDelivr 上的 CHANGELOG 并发加载与「没有 / 超时」判定 |
 | `src/bazaar.ts` | 内核 `/api/bazaar/getBazaarPackage`，取集市下发的仓库地址与版本 |
 | `src/render.ts` | 内核 `/api/lute/md2html` 渲染 + DOMPurify 消毒 + 相对链接补全 |
@@ -68,8 +68,20 @@
 - CHANGELOG 走 `cdn.jsdelivr.net`，`CHANGELOG.md` / `docs/CHANGELOG.md` / `doc/CHANGELOG.md`
   三个候选**并发**请求（不带 ref，jsDelivr 落到仓库默认分支），谁先 200 就用谁，
   拿到后立刻 `AbortController.abort()` 掉剩下的。
-  三个都 404 → 提示「这个仓库没有 CHANGELOG」；有网络错误或整体超过 8 秒 → 提示超时。
+  三个都 404 → 提示「这个仓库没有 CHANGELOG」；超时或请求失败 → 提示超时。
   成功结果按仓库缓存，失败不缓存。
+
+### 超时与重试
+
+- 两条加载路径的首次超时都是 3 秒（`TIMEOUT`），由各自 `AbortController` + 定时器实现：
+  `fetchReleases()` 失败时 `abort()`，`fetchChangelog()` 整体 `abort()`。
+- 超时**不自动换来源**：同一条线路慢，换到另一种也一样慢，只会多等 3 秒。
+  `missing`（确实没有）才按上面的规则回退。
+- 超时提示后面挂一个链接样式的「重新获取」（`.bazaar-release-notes__retry`），
+  点了把该弹窗的超时改成 7 秒（`RETRY_TIMEOUT`）并重跑当前来源；这之后本弹窗内所有加载都用 7 秒。
+- 区分超时与普通失败：`fetchReleases()` 返回 `ok / missing / timeout / error` 四种状态
+  （`error` 仍按原来的回退处理，保住 GitHub 限流时自动看 CHANGELOG 的行为）；
+  `fetchChangelog()` 只有 `ok / missing / timeout` 两种失败态，重试是唯一有意义的动作。
 
 ### GitHub 加速
 
@@ -89,8 +101,10 @@ node scripts/build-preview-css.mjs <思源仓库路径>
 ```
 
 它把思源 daylight 主题变量、预览用到的思源 SCSS partial（对话框、按钮、下拉、正文排版）与
-本项目的 `src/index.scss` 依次编译拼接。改了 `src/index.scss` 或思源样式后要重跑，
-再 `npm run preview` 重新截图。
+本项目的 `src/index.scss` 依次编译拼接。
+
+预览画面只画弹窗的常规状态，所以只有动了预览画面本身（`assets/preview.html`，或 `src/index.scss`
+里预览用得到的那几条规则）才需要重跑上面两条命令；加别的规则不用动这两个文件。
 
 ## 调试日志
 

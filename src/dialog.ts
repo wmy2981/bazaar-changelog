@@ -11,6 +11,10 @@ import type {ISettings} from "./settings";
 import {compareVersion, isSameVersion} from "./version";
 
 const CLASS = "bazaar-release-notes";
+/** 首次加载等这么久。国内拉 jsDelivr 常常要好几秒，等不到就给「重新获取」。 */
+const TIMEOUT = 3000;
+/** 点「重新获取」后多等一会儿，慢但能通的仓库这次能拿到。 */
+const RETRY_TIMEOUT = 7000;
 
 export interface IChangelogDialogOptions {
     i18n: TI18n;
@@ -35,6 +39,8 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
     /** 每次加载都换一个号，晚到的响应不能再改 DOM。 */
     let requestID = 0;
     let releases: IRelease[] = [];
+    /** 首次 3 秒；点过「重新获取」之后一直是 7 秒。 */
+    let timeoutMs = TIMEOUT;
     debug(`dialog: opening for ${repo}`, {
         version: options.version || "(unknown)",
         preferredSource: options.settings.preferredSource,
@@ -92,6 +98,28 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
     const setBody = (text: string) => {
         bodyElement.textContent = text;
     };
+    /** 超时提示后面挂一个链接样式的「重新获取」，点了用 7 秒重来一次。 */
+    const setBodyWithRetry = (text: string) => {
+        const wrapper = document.createElement("div");
+        wrapper.textContent = text;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `${CLASS}__retry`;
+        button.setAttribute("data-type", "retry");
+        button.textContent = t(i18n, "retry");
+        button.addEventListener("click", () => {
+            timeoutMs = RETRY_TIMEOUT;
+            const token = ++requestID;
+            debug("dialog: retrying with a longer timeout", {source: sourceElement.value, timeoutMs});
+            if (sourceElement.value === "changelog") {
+                void loadChangelog(token, false);
+            } else {
+                void loadReleaseNotes(token, false);
+            }
+        });
+        wrapper.append(" ", button);
+        bodyElement.replaceChildren(wrapper);
+    };
     const setVersionVisible = (visible: boolean) => {
         versionLabelElement.classList.toggle("fn__none", !visible);
         versionElement.classList.toggle("fn__none", !visible);
@@ -131,22 +159,27 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
      * 本次自动改回发行说明；用户之后手动切过来不再抢他的选择。
      */
     const loadChangelog = async (token: number, autoSwitch: boolean) => {
-        debug(`CHANGELOG: loading for ${repo}`, {autoSwitch});
+        debug(`CHANGELOG: loading for ${repo}`, {autoSwitch, timeoutMs});
         setVersionVisible(false);
         setBody(t(i18n, "loading"));
-        const result = await fetchChangelog(repo);
+        const result = await fetchChangelog(repo, timeoutMs);
         if (isStale(token)) {
             debug("CHANGELOG: response arrived after the request went stale, dropped");
             return;
         }
-        if (result.status !== "ok") {
+        if (result.status === "timeout") {
+            // 超时不自动换来源：多半是同一条线路慢，让用户点「重新获取」
+            setBodyWithRetry(t(i18n, "changelogTimeout"));
+            return;
+        }
+        if (result.status === "missing") {
             if (autoSwitch) {
-                debug(`CHANGELOG: ${result.status}, falling back to the release notes`);
+                debug("CHANGELOG: missing, falling back to the release notes");
                 sourceElement.value = "releaseNotes";
                 await loadReleaseNotes(token, false);
                 return;
             }
-            setBody(t(i18n, result.status === "missing" ? "changelogMissing" : "changelogTimeout"));
+            setBody(t(i18n, "changelogMissing"));
             return;
         }
         const html = await markdownToHTML(result.markdown);
@@ -163,26 +196,28 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
      * 本次自动改看 CHANGELOG；用户之后手动切回来不再抢他的选择。
      */
     const loadReleaseNotes = async (token: number, autoSwitch: boolean) => {
-        debug(`release notes: loading for ${repo}`, {version: options.version, autoSwitch});
+        debug(`release notes: loading for ${repo}`, {version: options.version, autoSwitch, timeoutMs});
         setVersionVisible(false);
         setBody(t(i18n, "loading"));
         versionElement.innerHTML = "";
-        let list: IRelease[] = [];
-        try {
-            list = await fetchReleases(repo, options.settings);
-        } catch (error) {
-            debug("release notes: fetch failed, treating it as no notes", {error: String(error)});
-            list = [];
-        }
+        const result = await fetchReleases(repo, options.settings, timeoutMs);
         if (isStale(token)) {
             debug("release notes: response arrived after the request went stale, dropped");
             return;
         }
+        if (result.status === "timeout") {
+            // 超时不自动换来源：多半是同一条线路慢，让用户点「重新获取」
+            setBodyWithRetry(t(i18n, "releaseNotesTimeout"));
+            return;
+        }
+        // 拿不到就当成「这一版没有发行说明」，仍按原来的回退处理
+        const list = result.status === "ok" ? result.releases : [];
         // 集市检索到的版本才算已知最新，GitHub 上比它新的发行版暂不显示
         releases = options.version ? list.filter((item) => compareVersion(item.tag, options.version) <= 0) : list;
         const matched = options.version ?
             releases.find((item) => isSameVersion(item.tag, options.version)) : releases[0];
         debug(`release notes: ${releases.length} of ${list.length} kept`, {
+            status: result.status,
             bazaarVersion: options.version || "(unknown)",
             dropped: list.filter((item) => !releases.includes(item)).map((item) => item.tag),
             matched: matched?.tag,

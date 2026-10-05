@@ -22,6 +22,8 @@ A SiYuan plugin that shows bazaar package release notes and repository changelog
   at the moment you open the dialog, this open switches to the CHANGELOG; when the CHANGELOG is the
   preferred source but the repository has none, it switches back to the release notes. The next open
   follows the preferred source again.
+- **Times out fast, and can be retried**: release notes and CHANGELOG both time out after 3 seconds on
+  the first load, and the timeout message carries a "Retry" link that gives it 7 seconds.
 - **GitHub acceleration switch**: off by default, so only `api.github.com` is requested. Turn it on and
   fill in one acceleration URL when you need it.
 
@@ -38,11 +40,13 @@ A SiYuan plugin that shows bazaar package release notes and repository changelog
 
 - **Release notes**: the GitHub Releases API (`https://api.github.com/repos/<owner>/<repo>/releases`),
   at most 100 entries, drafts filtered out, newest first; one request per repository per 30 minutes.
+  A timeout is not treated as a failure, so it can still be retried.
 - **CHANGELOG**: `https://cdn.jsdelivr.net/gh/<owner>/<repo>/<path>`, where `path` is one of
   `CHANGELOG.md`, `docs/CHANGELOG.md` and `doc/CHANGELOG.md`, all requested **in parallel**; the first
   one answering 200 wins (with no ref, jsDelivr resolves the repository's default branch). Three 404s
-  report that the repository has no CHANGELOG; a network error or more than 8 seconds overall reports a
-  timeout and cancels whatever is still pending.
+  report that the repository has no CHANGELOG; a timeout or a failed request reports a timeout and
+  cancels whatever is still pending. A timeout does not switch sources on its own, because a slow
+  route would be just as slow for the other source.
 - **Bazaar latest version**: `available.version` from the kernel `/api/bazaar/getBazaarPackage`. It
   decides the "Latest" mark and filters out releases the bazaar index has not seen.
 - **Markdown rendering**: the kernel `/api/lute/md2html`, the same Lute pipeline the bazaar README

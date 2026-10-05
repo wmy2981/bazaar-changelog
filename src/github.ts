@@ -64,11 +64,21 @@ interface IGithubRelease {
     published_at?: unknown;
 }
 
+export type TReleasesResult =
+    | {status: "ok", releases: IRelease[]}
+    /** 仓库一个发行版都没有。 */
+    | {status: "missing"}
+    /** 超过本次超时。 */
+    | {status: "timeout"}
+    /** 其他失败（网络错误、HTTP 错误码、限流）。 */
+    | {status: "error"};
+
 /**
  * 取仓库的发行版列表：丢掉草稿与无 tag 的项，按发布时间倒序。
  * 只打 api.github.com，除非用户在设置里手动开启加速。
+ * 超时与普通失败分开返回：超时由弹窗给「重新获取」，其余仍按原来的回退处理。
  */
-export const fetchReleases = async (repo: string, settings: ISettings): Promise<IRelease[]> => {
+export const fetchReleases = async (repo: string, settings: ISettings, timeoutMs: number): Promise<TReleasesResult> => {
     const key = `${repo}|${settings.githubAcceleration ? normalizeAccelerationURL(settings.githubAccelerationURL) : ""}`;
     const cached = cache.get(key);
     if (cached && Date.now() - cached.time < CACHE_TTL) {
@@ -76,52 +86,71 @@ export const fetchReleases = async (repo: string, settings: ISettings): Promise<
             count: cached.releases.length,
             ageSeconds: Math.round((Date.now() - cached.time) / 1000),
         });
-        return cached.releases;
+        return {status: "ok", releases: cached.releases};
     }
     const url = resolveGithubURL(`${RELEASES_API}/repos/${repo}/releases?per_page=100`, settings);
     debug(`release notes: GET ${url}`, {
         acceleration: settings.githubAcceleration,
         accelerationURL: settings.githubAccelerationURL,
+        timeoutMs,
     });
     const started = Date.now();
-    const response = await fetch(url, {
-        headers: {
-            Accept: "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
-    });
-    if (!response.ok) {
-        debug(`release notes: ${repo} responded ${response.status}`, {
+    let timedOut = false;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, timeoutMs);
+    try {
+        const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+                Accept: "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        });
+        if (!response.ok) {
+            debug(`release notes: ${repo} responded ${response.status}`, {
+                elapsed: Date.now() - started,
+                rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
+                rateLimitReset: response.headers.get("x-ratelimit-reset"),
+            });
+            return {status: "error"};
+        }
+        const payload: unknown = await response.json();
+        if (!Array.isArray(payload)) {
+            debug(`release notes: ${repo} did not return an array`, {payload});
+            return {status: "error"};
+        }
+        const releases = payload
+            .filter((item): item is IGithubRelease => Boolean(item) && typeof item === "object")
+            .filter((item) => item.draft !== true && typeof item.tag_name === "string" && item.tag_name !== "")
+            .map((item) => ({
+                tag: item.tag_name as string,
+                publishedAt: typeof item.published_at === "string" ? item.published_at : "",
+                markdown: typeof item.body === "string" ? item.body : "",
+            }))
+            // published_at 是 ISO 8601，字典序就是时间序
+            .sort((a, b) => a.publishedAt < b.publishedAt ? 1 : a.publishedAt > b.publishedAt ? -1 : 0);
+        cache.set(key, {time: Date.now(), releases});
+        debug(`release notes: ${repo} kept ${releases.length} of ${payload.length}`, {
             elapsed: Date.now() - started,
             rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
-            rateLimitReset: response.headers.get("x-ratelimit-reset"),
+            releases: releases.map((item) => ({
+                tag: item.tag,
+                publishedAt: item.publishedAt,
+                bytes: item.markdown.length,
+            })),
         });
-        throw new Error(`GitHub releases responded ${response.status}`);
+        return releases.length === 0 ? {status: "missing"} : {status: "ok", releases};
+    } catch (error) {
+        debug(`release notes: ${repo} ${timedOut ? "timed out" : "failed"}`, {
+            elapsed: Date.now() - started,
+            timeoutMs,
+            error: String(error),
+        });
+        return {status: timedOut ? "timeout" : "error"};
+    } finally {
+        window.clearTimeout(timer);
     }
-    const payload: unknown = await response.json();
-    if (!Array.isArray(payload)) {
-        debug(`release notes: ${repo} did not return an array`, {payload});
-        throw new Error("GitHub releases did not return an array");
-    }
-    const releases = payload
-        .filter((item): item is IGithubRelease => Boolean(item) && typeof item === "object")
-        .filter((item) => item.draft !== true && typeof item.tag_name === "string" && item.tag_name !== "")
-        .map((item) => ({
-            tag: item.tag_name as string,
-            publishedAt: typeof item.published_at === "string" ? item.published_at : "",
-            markdown: typeof item.body === "string" ? item.body : "",
-        }))
-        // published_at 是 ISO 8601，字典序就是时间序
-        .sort((a, b) => a.publishedAt < b.publishedAt ? 1 : a.publishedAt > b.publishedAt ? -1 : 0);
-    cache.set(key, {time: Date.now(), releases});
-    debug(`release notes: ${repo} kept ${releases.length} of ${payload.length}`, {
-        elapsed: Date.now() - started,
-        rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
-        releases: releases.map((item) => ({
-            tag: item.tag,
-            publishedAt: item.publishedAt,
-            bytes: item.markdown.length,
-        })),
-    });
-    return releases;
 };
