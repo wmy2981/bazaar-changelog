@@ -2,7 +2,7 @@
   "name": "bazaar-changelog",
   "author": "wmy2981",
   "url": "https://github.com/wmy2981/bazaar-changelog",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "minAppVersion": "3.7.0",
   "backends": [
     "all"
