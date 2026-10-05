@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>集市更新日志</title>
+<link rel="stylesheet" href="preview.css">
+<style>
+    /* 预览画面固定 1024x768，不出现滚动条；思源原生样式见 assets/preview.css。 */
+    body {
+        width: 1024px;
+        height: 768px;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: var(--b3-theme-background);
+    }
+
+    .preview-scene {
+        position: relative;
+        width: 1024px;
+        height: 768px;
+        overflow: hidden;
+    }
+
+    /* 思源打开 Dialog 时会用递增的 z-index 把弹窗放到最上层，这里照做 */
+    .preview-scene > .b3-dialog {
+        z-index: 10;
+    }
+</style>
+</head>
+<body>
+<div class="preview-scene">
+    <!-- 「更新日志」弹窗：元素结构与思源 Dialog 生成的一致，类名全部用思源原生类 -->
+    <div class="b3-dialog b3-dialog--open">
+        <div class="b3-dialog__scrim"></div>
+        <div role="dialog" aria-modal="true" aria-labelledby="dialog-title-preview" tabindex="-1" class="b3-dialog__container bazaar-release-notes" style="width: 600px; height: auto">
+            <svg class="b3-dialog__close fn__none"><use xlink:href="#iconCloseRound"></use></svg>
+            <div id="dialog-title-preview" class="resize__move b3-dialog__header">更新日志</div>
+            <div class="b3-dialog__body">
+                <div class="bazaar-release-notes__head">
+                    <span class="bazaar-release-notes__label">来源</span>
+                    <select class="b3-select bazaar-release-notes__select bazaar-release-notes__select--source">
+                        <option selected>发行说明</option>
+                        <option>CHANGELOG</option>
+                    </select>
+                    <span class="bazaar-release-notes__label">版本</span>
+                    <select class="b3-select bazaar-release-notes__select">
+                        <option selected>v0.2.0 (最新)</option>
+                        <option>v0.1.1</option>
+                        <option>v0.1.0</option>
+                    </select>
+                </div>
+                <div class="bazaar-release-notes__body b3-typography">
+                    <p>这次把集市包的发行说明与仓库 CHANGELOG 合到同一个弹窗里，更新也在弹窗里确认。</p>
+                    <h2>新增</h2>
+                    <ul>
+                        <li>集市包详情页的版本号变成可点开的入口。</li>
+                        <li>集市包列表与详情页的「更新」按钮改用「更新日志」弹窗确认更新。</li>
+                        <li>弹窗顶部可在发行说明与仓库 CHANGELOG 之间切换。</li>
+                    </ul>
+                    <h2>改进</h2>
+                    <ul>
+                        <li>「最新」以集市索引检索到的版本为准，GitHub 上更新的发行版暂不显示。</li>
+                        <li>集市这一版没有发行说明时，本次自动改看 CHANGELOG。</li>
+                    </ul>
+                    <p>完整说明见 <a href="https://github.com/wmy2981/bazaar-changelog" target="_blank" rel="noopener noreferrer">bazaar-changelog</a>。</p>
+                </div>                <div class="b3-dialog__action">
+                    <button class="b3-button b3-button--cancel">取消</button>
+                    <div class="fn__space"></div>
+                    <button class="b3-button b3-button--text">更新</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
