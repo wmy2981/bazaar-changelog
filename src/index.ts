@@ -58,6 +58,7 @@ export default class ReleaseNotePlugin extends Plugin {
                 element.className = "b3-text-field fn__block";
                 element.placeholder = "https://gh-proxy.com/";
                 element.value = this.settings.githubAccelerationURL;
+                this.suppressOpenKeyboard(element);
                 this.accelerationURLElement = element;
                 return element;
             },
@@ -101,6 +102,23 @@ export default class ReleaseNotePlugin extends Plugin {
         element.value = this.settings.preferredSource;
         this.sourceElement = element;
         return element;
+    }
+
+    /**
+     * 思源构建插件设置弹窗时，会把每个 input/textarea 交给 dialog.bindInput()，
+     * 而 bindInput() 第一件事就是 focus()——这时元素还没插进 DOM。
+     * 移动端改写了 HTMLElement.prototype.focus()：只要 focus 到可输入元素（思源自己的
+     * canInput() 判定）就调原生 showKeyboard()，不看元素是否在文档里，所以打开设置面板
+     * 会直接弹出键盘。构建期间先标成 readonly 让 canInput() 判否，本轮任务结束再放开。
+     *
+     * 必须用 setAttribute 写成 "readonly"：3.7.x 判的是 getAttribute("readonly") === "readonly"，
+     * 只设 element.readOnly 会得到空字符串的 readonly 属性，在 3.7.x 上照样弹键盘。
+     */
+    private suppressOpenKeyboard(element: HTMLInputElement) {
+        element.setAttribute("readonly", "readonly");
+        setTimeout(() => {
+            element.removeAttribute("readonly");
+        }, 0);
     }
 
     private async saveSettings() {

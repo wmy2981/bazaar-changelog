@@ -89,6 +89,21 @@
 请求地址变成 `<加速地址><原始地址>`（前缀式反代，与上游实现一致）；
 地址非法或未开启时按原地址请求。该开关只作用于发行说明接口。
 
+### 设置面板在移动端不弹键盘
+
+思源构建插件设置弹窗时会把每个 `input`/`textarea` 交给 `dialog.bindInput()`，而它第一件事就是
+`focus()` 一次，且这次调用发生在元素插入 DOM 之前。移动端改写了 `HTMLElement.prototype.focus()`，
+只要 focus 到思源 `canInput()` 认为「可输入」的元素就调原生 `showKeyboard()`——不看元素是否在文档里，
+所以「加速地址」输入框会让打开设置面板时直接弹出键盘。
+
+修法：`suppressOpenKeyboard()` 在输入框建出来时先 `setAttribute("readonly", "readonly")`，本轮任务结束
+（`setTimeout(0)`）再摘掉。构建期间 `canInput()` 判否，键盘不再弹出；之后用户点它照常输入。
+桌面端不弹键盘，这个窗口期也感知不到，所以不区分平台。
+
+属性值必须写成 `"readonly"`：3.7.x（本插件的 `minAppVersion`）的 `canInput()` 判的是
+`getAttribute("readonly") === "readonly"`，只设 `element.readOnly` 只会得到空字符串的属性值，
+在 3.7.x 上照样弹出键盘。
+
 ### 预览图
 
 `assets/preview.png` 是 `assets/preview.html` 的截图，画面只有「更新日志」弹窗，元素结构与思源
