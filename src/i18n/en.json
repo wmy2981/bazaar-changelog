@@ -15,6 +15,7 @@
   "releaseNotesTimeout": "Timed out loading the release notes",
   "changelogMissing": "This repository has no CHANGELOG",
   "changelogTimeout": "Timed out loading the CHANGELOG",
+  "changelogTimeoutHint": "Poor network, or this repository has no CHANGELOG",
   "retry": "Retry",
   "packageUnavailable": "Failed to load the bazaar package info",
   "preferredSource": "Preferred source",

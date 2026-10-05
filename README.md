@@ -22,8 +22,6 @@ A SiYuan plugin that shows bazaar package release notes and repository changelog
   at the moment you open the dialog, this open switches to the CHANGELOG; when the CHANGELOG is the
   preferred source but the repository has none, it switches back to the release notes. The next open
   follows the preferred source again.
-- **Times out fast, and can be retried**: release notes and CHANGELOG both time out after 3 seconds on
-  the first load, and the timeout message carries a "Retry" link that gives it 7 seconds.
 - **GitHub acceleration switch**: off by default, so only `api.github.com` is requested. Turn it on and
   fill in one acceleration URL when you need it.
 
@@ -41,12 +39,17 @@ A SiYuan plugin that shows bazaar package release notes and repository changelog
 - **Release notes**: the GitHub Releases API (`https://api.github.com/repos/<owner>/<repo>/releases`),
   at most 100 entries, drafts filtered out, newest first; one request per repository per 30 minutes.
   A timeout is not treated as a failure, so it can still be retried.
-- **CHANGELOG**: `https://cdn.jsdelivr.net/gh/<owner>/<repo>/<path>`, where `path` is one of
-  `CHANGELOG.md`, `docs/CHANGELOG.md` and `doc/CHANGELOG.md`, all requested **in parallel**; the first
-  one answering 200 wins (with no ref, jsDelivr resolves the repository's default branch). Three 404s
-  report that the repository has no CHANGELOG; a timeout or a failed request reports a timeout and
-  cancels whatever is still pending. A timeout does not switch sources on its own, because a slow
-  route would be just as slow for the other source.
+- **CHANGELOG**: `https://gcore.jsdelivr.net/gh/<owner>/<repo>/<path>` (jsDelivr's default
+  `cdn.jsdelivr.net` is DNS-poisoned in mainland China, so only the Gcore endpoint is used), where
+  `path` is one of `CHANGELOG.md`, `docs/CHANGELOG.md` and `doc/CHANGELOG.md`, all requested **in
+  parallel**; the first one answering 200 wins and the remaining requests are cancelled (with no ref,
+  jsDelivr resolves the repository's default branch). Only a `404` (or a 200 with an empty body) means
+  "this path has no file"; `403` / `429` / `5xx` / network errors only mean this request did not get
+  through and are never reported as "none". All three candidates answering 404 reports "this
+  repository has no CHANGELOG" (on a cold cache those 404s wait for jsDelivr to reach the origin, so
+  that verdict is waited for up to 8 seconds); anything else reports a timeout, with a second line
+  saying "Poor network, or this repository has no CHANGELOG". A timeout does not switch sources on its
+  own, because a slow route would be just as slow for the other source.
 - **Bazaar latest version**: `available.version` from the kernel `/api/bazaar/getBazaarPackage`. It
   decides the "Latest" mark and filters out releases the bazaar index has not seen.
 - **Markdown rendering**: the kernel `/api/lute/md2html`, the same Lute pipeline the bazaar README
@@ -63,8 +66,10 @@ A SiYuan plugin that shows bazaar package release notes and repository changelog
   plugin logs a console warning, stops replacing the update button, and does not implement an update
   path of its own.
 - Code blocks in the dialog are rendered as plain text, without syntax highlighting.
-- GitHub acceleration only affects the release notes API; the CHANGELOG comes from `cdn.jsdelivr.net`
-  and is not affected by the switch.
+- GitHub acceleration only affects the release notes API; the CHANGELOG comes from
+  `gcore.jsdelivr.net` and is not affected by the switch.
+- The CHANGELOG only uses the Gcore endpoint: when it is unreachable there is no second CDN to fall
+  back on, so the dialog reports a timeout and offers a retry.
 
 ## Development
 

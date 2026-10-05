@@ -98,10 +98,14 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
     const setBody = (text: string) => {
         bodyElement.textContent = text;
     };
-    /** 超时提示后面挂一个链接样式的「重新获取」，点了用 7 秒重来一次。 */
-    const setBodyWithRetry = (text: string) => {
-        const wrapper = document.createElement("div");
-        wrapper.textContent = text;
+    /**
+     * 超时提示后面挂一个链接样式的「重新获取」，点了用 7 秒重来一次。
+     * `hint` 是第二行的补充说明：CHANGELOG 超时既可能是网络差，也可能这个仓库确实没有，
+     * 光看「超时」两个字分不出来。
+     */
+    const setBodyWithRetry = (text: string, hint?: string) => {
+        const line = document.createElement("div");
+        line.textContent = text;
         const button = document.createElement("button");
         button.type = "button";
         button.className = `${CLASS}__retry`;
@@ -117,8 +121,15 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
                 void loadReleaseNotes(token, false);
             }
         });
-        wrapper.append(" ", button);
-        bodyElement.replaceChildren(wrapper);
+        line.append(" ", button);
+        if (!hint) {
+            bodyElement.replaceChildren(line);
+            return;
+        }
+        const hintElement = document.createElement("div");
+        hintElement.className = `${CLASS}__hint`;
+        hintElement.textContent = hint;
+        bodyElement.replaceChildren(line, hintElement);
     };
     const setVersionVisible = (visible: boolean) => {
         versionLabelElement.classList.toggle("fn__none", !visible);
@@ -169,7 +180,7 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
         }
         if (result.status === "timeout") {
             // 超时不自动换来源：多半是同一条线路慢，让用户点「重新获取」
-            setBodyWithRetry(t(i18n, "changelogTimeout"));
+            setBodyWithRetry(t(i18n, "changelogTimeout"), t(i18n, "changelogTimeoutHint"));
             return;
         }
         if (result.status === "missing") {

@@ -15,6 +15,7 @@
   "releaseNotesTimeout": "获取发行说明超时",
   "changelogMissing": "这个仓库没有 CHANGELOG",
   "changelogTimeout": "获取 CHANGELOG 超时",
+  "changelogTimeoutHint": "网络状况差或这个仓库没有 CHANGELOG",
   "retry": "重新获取",
   "packageUnavailable": "无法获取这个集市包的信息",
   "preferredSource": "优先加载",

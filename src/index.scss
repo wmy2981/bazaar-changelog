@@ -38,6 +38,13 @@
     padding: 16px 24px;
   }
 
+  // 超时提示的第二行：不与主提示争注意力
+  &__hint {
+    color: var(--b3-theme-on-surface);
+    font-size: var(--b3-font-size);
+    margin-top: 4px;
+  }
+
   // 超时提示后面的「重新获取」：与正文里的链接同一样式
   &__retry {
     background-color: transparent;
