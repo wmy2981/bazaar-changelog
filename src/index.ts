@@ -1,14 +1,17 @@
 import {Plugin, Setting, showMessage} from "siyuan";
+import {observeBazaarReadme} from "./bazaarDom";
 import type {TI18n} from "./i18n";
 import {t} from "./i18n";
 import "./index.scss";
 import {DEFAULT_SETTINGS, mergeSettings} from "./settings";
 import type {ISettings} from "./settings";
+import {interceptBazaarUpdate} from "./update";
 
 const STORAGE_NAME = "settings";
 
 export default class ReleaseNotePlugin extends Plugin {
     private settings: ISettings = {...DEFAULT_SETTINGS};
+    private readonly disposers: Array<() => void> = [];
     private sourceElement: HTMLSelectElement | undefined;
     private accelerationElement: HTMLInputElement | undefined;
     private accelerationURLElement: HTMLInputElement | undefined;
@@ -50,6 +53,15 @@ export default class ReleaseNotePlugin extends Plugin {
                 return element;
             },
         });
+
+        this.disposers.push(
+            interceptBazaarUpdate(this.texts, () => this.settings),
+            observeBazaarReadme(this.texts, () => this.settings),
+        );
+    }
+
+    override onunload() {
+        this.disposers.splice(0).forEach((dispose) => dispose());
     }
 
     private readonly texts = (): TI18n => this.i18n;
