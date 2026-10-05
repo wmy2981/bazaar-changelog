@@ -5,6 +5,7 @@ import {fetchReleases, parseGithubRepo} from "./github";
 import type {IRelease} from "./github";
 import {t} from "./i18n";
 import type {TI18n} from "./i18n";
+import {debug} from "./logger";
 import {applyMarkdownHTML, markdownToHTML} from "./render";
 import type {ISettings} from "./settings";
 import {compareVersion, isSameVersion} from "./version";
@@ -34,6 +35,12 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
     /** 每次加载都换一个号，晚到的响应不能再改 DOM。 */
     let requestID = 0;
     let releases: IRelease[] = [];
+    debug(`dialog: opening for ${repo}`, {
+        version: options.version || "(unknown)",
+        preferredSource: options.settings.preferredSource,
+        confirmable,
+        mobile: isMobile,
+    });
 
     const dialog = new Dialog({
         title: t(i18n, "changelog"),
@@ -76,6 +83,7 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
     if (confirmable) {
         (dialog.element.querySelector('[data-type="confirm"]') as HTMLElement).addEventListener("click", () => {
             const confirm = options.onConfirm;
+            debug("dialog: update confirmed");
             dialog.destroy();
             confirm?.();
         });
@@ -93,16 +101,24 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
     const showRelease = async (token: number, tag: string) => {
         const release = releases.find((item) => item.tag === tag) || releases[0];
         if (!release) {
+            debug("release notes: no release to show", {requested: tag, known: releases.length});
             setBody(t(i18n, "releaseNotesUnavailable"));
             return;
         }
         if (!release.markdown.trim()) {
+            debug(`release notes: ${release.tag} has an empty body`);
             setBody(t(i18n, "releaseNotesEmpty"));
             return;
         }
+        debug(`release notes: showing ${release.tag}`, {
+            publishedAt: release.publishedAt,
+            bytes: release.markdown.length,
+            linkBase: `${repoWebURL(repo)}/blob/${release.tag}/`,
+        });
         setBody(t(i18n, "loading"));
         const html = await markdownToHTML(release.markdown);
         if (isStale(token)) {
+            debug("release notes: response arrived after the request went stale, dropped");
             return;
         }
         if (!applyMarkdownHTML(bodyElement, html, `${repoWebURL(repo)}/blob/${release.tag}/`)) {
@@ -115,14 +131,17 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
      * 本次自动改回发行说明；用户之后手动切过来不再抢他的选择。
      */
     const loadChangelog = async (token: number, autoSwitch: boolean) => {
+        debug(`CHANGELOG: loading for ${repo}`, {autoSwitch});
         setVersionVisible(false);
         setBody(t(i18n, "loading"));
         const result = await fetchChangelog(repo);
         if (isStale(token)) {
+            debug("CHANGELOG: response arrived after the request went stale, dropped");
             return;
         }
         if (result.status !== "ok") {
             if (autoSwitch) {
+                debug(`CHANGELOG: ${result.status}, falling back to the release notes`);
                 sourceElement.value = "releaseNotes";
                 await loadReleaseNotes(token, false);
                 return;
@@ -144,23 +163,32 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
      * 本次自动改看 CHANGELOG；用户之后手动切回来不再抢他的选择。
      */
     const loadReleaseNotes = async (token: number, autoSwitch: boolean) => {
+        debug(`release notes: loading for ${repo}`, {version: options.version, autoSwitch});
         setVersionVisible(false);
         setBody(t(i18n, "loading"));
         versionElement.innerHTML = "";
         let list: IRelease[] = [];
         try {
             list = await fetchReleases(repo, options.settings);
-        } catch {
+        } catch (error) {
+            debug("release notes: fetch failed, treating it as no notes", {error: String(error)});
             list = [];
         }
         if (isStale(token)) {
+            debug("release notes: response arrived after the request went stale, dropped");
             return;
         }
         // 集市检索到的版本才算已知最新，GitHub 上比它新的发行版暂不显示
         releases = options.version ? list.filter((item) => compareVersion(item.tag, options.version) <= 0) : list;
         const matched = options.version ?
             releases.find((item) => isSameVersion(item.tag, options.version)) : releases[0];
+        debug(`release notes: ${releases.length} of ${list.length} kept`, {
+            bazaarVersion: options.version || "(unknown)",
+            dropped: list.filter((item) => !releases.includes(item)).map((item) => item.tag),
+            matched: matched?.tag,
+        });
         if (autoSwitch && (!matched || !matched.markdown.trim())) {
+            debug("release notes: nothing for the bazaar version, falling back to the CHANGELOG");
             sourceElement.value = "changelog";
             await loadChangelog(token, false);
             return;
@@ -180,6 +208,7 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
 
     sourceElement.addEventListener("change", () => {
         const token = ++requestID;
+        debug("dialog: source changed", {source: sourceElement.value});
         if (sourceElement.value === "changelog") {
             void loadChangelog(token, false);
         } else {
@@ -187,6 +216,7 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
         }
     });
     versionElement.addEventListener("change", () => {
+        debug("dialog: version changed", {tag: versionElement.value});
         void showRelease(requestID, versionElement.value);
     });
 
@@ -207,7 +237,15 @@ const repoWebURL = (repo: string) => `https://github.com/${repo}`;
  */
 export const openChangelog = (options: IChangelogDialogOptions) => {
     const repo = parseGithubRepo(options.repoURL);
+    debug("dialog: open requested", {
+        repoURL: options.repoURL,
+        repo,
+        version: options.version || "(unknown)",
+        preferredSource: options.settings.preferredSource,
+        confirmable: Boolean(options.onConfirm),
+    });
     if (!repo) {
+        debug("dialog: not a GitHub repository, giving up");
         showMessage(t(options.i18n, "packageUnavailable"));
         return;
     }

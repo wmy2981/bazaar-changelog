@@ -1,4 +1,5 @@
 import {fetchPost} from "siyuan";
+import {debug} from "./logger";
 
 /**
  * 与集市 README 同一套消毒规则：禁 iframe，且只放行 http(s)/mailto 之类的协议。
@@ -11,12 +12,23 @@ const SANITIZE_OPTIONS = {
 };
 
 /** 用内核的 Lute 把 Markdown 渲染成 HTML，拿到的就是思源自己那套排版。 */
-export const markdownToHTML = (markdown: string): Promise<string> =>
-    new Promise((resolve) => {
+export const markdownToHTML = (markdown: string): Promise<string> => {
+    const started = Date.now();
+    debug("markdown: POST /api/lute/md2html", {bytes: markdown.length});
+    return new Promise((resolve) => {
         fetchPost("/api/lute/md2html", {markdown, mode: ""}, (response) => {
-            resolve(response.code === 0 ? response.data.html : "");
+            const html = response.code === 0 ? response.data.html : "";
+            debug("markdown: rendered", {
+                elapsed: Date.now() - started,
+                code: response.code,
+                msg: response.msg,
+                inputBytes: markdown.length,
+                htmlBytes: html.length,
+            });
+            resolve(html);
         });
     });
+};
 
 /**
  * 消毒后写进容器，并把相对链接、相对图片补成仓库地址，链接一律新窗口打开。
@@ -24,10 +36,13 @@ export const markdownToHTML = (markdown: string): Promise<string> =>
  */
 export const applyMarkdownHTML = (container: HTMLElement, html: string, linkBase: string): boolean => {
     if (!html || !window.DOMPurify) {
+        debug("markdown: nothing to inject", {htmlBytes: html.length, hasDOMPurify: Boolean(window.DOMPurify)});
         return false;
     }
     container.innerHTML = window.DOMPurify.sanitize(html, SANITIZE_OPTIONS);
-    container.querySelectorAll("a").forEach((anchor) => {
+    const links = container.querySelectorAll("a");
+    const images = container.querySelectorAll("img");
+    links.forEach((anchor) => {
         anchor.setAttribute("target", "_blank");
         anchor.setAttribute("rel", "noopener noreferrer");
         const href = anchor.getAttribute("href");
@@ -40,6 +55,12 @@ export const applyMarkdownHTML = (container: HTMLElement, html: string, linkBase
         if (src) {
             image.setAttribute("src", absolutize(src, linkBase));
         }
+    });
+    debug("markdown: injected", {
+        htmlBytes: html.length,
+        links: links.length,
+        images: images.length,
+        linkBase,
     });
     return true;
 };

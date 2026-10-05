@@ -19,6 +19,7 @@
 | `src/bazaarDom.ts` | 把集市详情页「集市信息 - 版本」换成可点开的按钮 |
 | `src/update.ts` | 拦截集市「更新」按钮，用更新日志弹窗确认后再重放点击 |
 | `src/i18n.ts` / `src/escape.ts` | 文案取值与 HTML 转义 |
+| `src/logger.ts` | 调试日志开关与带前缀的 `debug()` / `warn()` |
 | `src/globals.d.ts` | `window.DOMPurify` 声明 |
 | `scripts/build-preview-css.mjs` | 从思源源码编译预览用的原生样式到 `assets/preview.css` |
 
@@ -90,6 +91,17 @@ node scripts/build-preview-css.mjs <思源仓库路径>
 它把思源 daylight 主题变量、预览用到的思源 SCSS partial（对话框、按钮、下拉、正文排版）与
 本项目的 `src/index.scss` 依次编译拼接。改了 `src/index.scss` 或思源样式后要重跑，
 再 `npm run preview` 重新截图。
+
+## 调试日志
+
+设置面板最后一项「调试模式」打开后，`console.log` 会输出本插件的完整过程日志，统一前缀
+`[bazaar-changelog]`：插件载入/卸载、设置读写、弹窗打开与来源切换、发行说明的请求地址与耗时
+（含限流余量、被丢掉的版本）、CHANGELOG 的候选地址与命中/404/超时、Markdown 渲染耗时、
+集市详情页增强、更新按钮的拦截与重放。
+
+- 全部走 `src/logger.ts` 的 `debug()`，关闭时一行都不打；不要用裸 `console.log`。
+- `warn()` 只留给「插件没接上」这类异常（集市结构变了、拿不到仓库地址），不受开关影响。
+- 加日志时记上耗时和关键参数，便于用户把输出直接贴回来定位。
 
 ## 约定
 

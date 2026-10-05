@@ -1,4 +1,5 @@
 import {fetchPost, getFrontend} from "siyuan";
+import {debug} from "./logger";
 
 export interface IBazaarAvailable {
     repoURL: string;
@@ -13,12 +14,21 @@ export interface IBazaarAvailable {
  */
 export const fetchBazaarAvailable = (packageType: string, packageName: string): Promise<IBazaarAvailable | undefined> =>
     new Promise((resolve) => {
+        const started = Date.now();
         fetchPost("/api/bazaar/getBazaarPackage", {
             frontend: getFrontend(),
             packageType,
             packageName,
         }, (response) => {
             const available = response.code === 0 ? response.data.available : undefined;
+            debug("bazaar: /api/bazaar/getBazaarPackage answered", {
+                packageType,
+                packageName,
+                code: response.code,
+                msg: response.msg,
+                elapsed: Date.now() - started,
+                available: available ? {repoURL: available.repoURL, version: available.version} : undefined,
+            });
             resolve(available ? {repoURL: available.repoURL, version: available.version} : undefined);
         });
     });

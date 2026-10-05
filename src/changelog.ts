@@ -1,3 +1,5 @@
+import {debug} from "./logger";
+
 /** 仓库里的 changelog 文件，三个路径同时找。 */
 const PATHS = ["CHANGELOG.md", "docs/CHANGELOG.md", "doc/CHANGELOG.md"];
 /** 不带 ref 时 jsDelivr 落到仓库默认分支，所以一个仓库只有这三个候选。 */
@@ -23,17 +25,30 @@ const cache = new Map<string, string>();
 export const fetchChangelog = async (repo: string): Promise<TChangelogResult> => {
     const cached = cache.get(repo);
     if (cached !== undefined) {
+        debug(`CHANGELOG: cache hit for ${repo}`, {bytes: cached.length});
         return {status: "ok", markdown: cached};
     }
+    const candidates = PATHS.map((filePath) => `${CDN}/${repo}/${filePath}`);
+    debug(`CHANGELOG: ${repo} tried in parallel`, {candidates, timeoutMs: TIMEOUT});
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), TIMEOUT);
+    const started = Date.now();
     try {
-        const markdown = await Promise.any(PATHS.map((filePath) => fetchOne(`${CDN}/${repo}/${filePath}`, controller.signal)));
-        cache.set(repo, markdown);
-        return {status: "ok", markdown};
+        const hit = await Promise.any(candidates.map((url) => fetchOne(url, controller.signal)));
+        cache.set(repo, hit.markdown);
+        debug(`CHANGELOG: ${repo} hit ${hit.url}`, {
+            elapsed: Date.now() - started,
+            bytes: hit.markdown.length,
+        });
+        return {status: "ok", markdown: hit.markdown};
     } catch (error) {
         const errors: unknown[] = error instanceof AggregateError ? error.errors : [error];
-        return errors.every((item) => item instanceof MissingFileError) ? {status: "missing"} : {status: "timeout"};
+        const status = errors.every((item) => item instanceof MissingFileError) ? "missing" : "timeout";
+        debug(`CHANGELOG: ${repo} ${status}`, {
+            elapsed: Date.now() - started,
+            errors: errors.map((item) => String(item)),
+        });
+        return {status};
     } finally {
         window.clearTimeout(timer);
         // 没赢的那几个请求不必再等
@@ -41,14 +56,16 @@ export const fetchChangelog = async (repo: string): Promise<TChangelogResult> =>
     }
 };
 
-const fetchOne = async (url: string, signal: AbortSignal): Promise<string> => {
+const fetchOne = async (url: string, signal: AbortSignal): Promise<{url: string, markdown: string}> => {
     const response = await fetch(url, {signal});
     if (!response.ok) {
+        debug(`CHANGELOG: ${url} responded ${response.status}`);
         throw new MissingFileError(url);
     }
     const markdown = await response.text();
     if (!markdown.trim()) {
+        debug(`CHANGELOG: ${url} is empty`);
         throw new MissingFileError(url);
     }
-    return markdown;
+    return {url, markdown};
 };

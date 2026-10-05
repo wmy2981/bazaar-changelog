@@ -2,6 +2,7 @@ import {openChangelog} from "./dialog";
 import {escapeHTML} from "./escape";
 import {t} from "./i18n";
 import type {TI18n} from "./i18n";
+import {debug} from "./logger";
 import type {ISettings} from "./settings";
 
 const README_ID = "configBazaarReadme";
@@ -43,11 +44,25 @@ export const sideRepoURL = (side: HTMLElement): string => side.getAttribute("dat
 
 const enhance = (readme: HTMLElement, i18n: TI18n) => {
     const side = readme.querySelector<HTMLElement>(".item__side");
-    if (!side || side.dataset[DONE_FLAG] === "true") {
+    if (!side) {
+        debug("bazaar readme: no side panel yet");
+        return;
+    }
+    if (side.dataset[DONE_FLAG] === "true") {
         return;
     }
     const valueElement = findMarketVersionValue(side);
-    if (!valueElement || !sideRepoURL(side)) {
+    if (!valueElement) {
+        debug("bazaar readme: no market version row found", {
+            packageName: side.getAttribute("data-name"),
+            packageType: side.getAttribute("data-package-type"),
+        });
+        return;
+    }
+    if (!sideRepoURL(side)) {
+        debug("bazaar readme: no repository URL on the side panel", {
+            packageName: side.getAttribute("data-name"),
+        });
         return;
     }
     const text = label(valueElement);
@@ -56,6 +71,14 @@ const enhance = (readme: HTMLElement, i18n: TI18n) => {
         return;
     }
     side.dataset[DONE_FLAG] = "true";
+    debug("bazaar readme: version turned into a changelog entry", {
+        packageName: side.getAttribute("data-name"),
+        packageType: side.getAttribute("data-package-type"),
+        from: side.getAttribute("data-from"),
+        repoURL: sideRepoURL(side),
+        version,
+        label: text,
+    });
     // 集市包详情页把版本号做成可点开的按钮，和上游发行说明弹窗的入口一致
     valueElement.innerHTML = `<button type="button" class="${LINK_CLASS} ariaLabel" data-position="north" data-type="${LINK_TYPE}" data-version="${escapeHTML(version)}" aria-label="${escapeHTML(t(i18n, "releaseNotesTip", {version}))}">${escapeHTML(text)}</button>`;
 };
@@ -108,6 +131,12 @@ export const observeBazaarReadme = (i18n: () => TI18n, settings: () => ISettings
         if (!side) {
             return;
         }
+        debug("bazaar readme: version link clicked", {
+            packageName: side.getAttribute("data-name"),
+            packageType: side.getAttribute("data-package-type"),
+            repoURL: sideRepoURL(side),
+            version: button.getAttribute("data-version") || marketVersion(side),
+        });
         openChangelog({
             i18n: i18n(),
             settings: settings(),

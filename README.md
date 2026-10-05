@@ -32,6 +32,7 @@ A SiYuan plugin that shows bazaar package release notes and repository changelog
 | Preferred source | Release notes | Which source the changelog dialog opens with. |
 | GitHub acceleration | Off | When off, only `api.github.com` is requested. |
 | Acceleration URL | Empty | A prefix proxy such as `https://gh-proxy.com/` . With acceleration on and an http(s) URL set, release notes requests are prepended with it. |
+| Debug mode | Off | Print complete plugin logs to the console (request URLs, timings, version filtering, fallback reasons), prefixed with `[bazaar-changelog]`. |
 
 ## Data sources
 

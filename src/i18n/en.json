@@ -20,5 +20,7 @@
   "githubAcceleration": "GitHub acceleration",
   "githubAccelerationTip": "When off, only api.github.com is requested. When on, release notes requests go through the acceleration URL below.",
   "githubAccelerationURL": "Acceleration URL",
-  "githubAccelerationURLTip": "A prefix proxy prepended to the original URL, for example https://gh-proxy.com/ . Left empty or not an http(s) URL, it is ignored."
+  "githubAccelerationURLTip": "A prefix proxy prepended to the original URL, for example https://gh-proxy.com/ . Left empty or not an http(s) URL, it is ignored.",
+  "debugMode": "Debug mode",
+  "debugModeTip": "Print complete plugin logs to the console for troubleshooting; leave it off normally."
 }

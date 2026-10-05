@@ -1,3 +1,4 @@
+import {debug} from "./logger";
 import type {ISettings} from "./settings";
 
 export interface IRelease {
@@ -71,19 +72,35 @@ export const fetchReleases = async (repo: string, settings: ISettings): Promise<
     const key = `${repo}|${settings.githubAcceleration ? normalizeAccelerationURL(settings.githubAccelerationURL) : ""}`;
     const cached = cache.get(key);
     if (cached && Date.now() - cached.time < CACHE_TTL) {
+        debug(`release notes: cache hit for ${repo}`, {
+            count: cached.releases.length,
+            ageSeconds: Math.round((Date.now() - cached.time) / 1000),
+        });
         return cached.releases;
     }
-    const response = await fetch(resolveGithubURL(`${RELEASES_API}/repos/${repo}/releases?per_page=100`, settings), {
+    const url = resolveGithubURL(`${RELEASES_API}/repos/${repo}/releases?per_page=100`, settings);
+    debug(`release notes: GET ${url}`, {
+        acceleration: settings.githubAcceleration,
+        accelerationURL: settings.githubAccelerationURL,
+    });
+    const started = Date.now();
+    const response = await fetch(url, {
         headers: {
             Accept: "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
         },
     });
     if (!response.ok) {
+        debug(`release notes: ${repo} responded ${response.status}`, {
+            elapsed: Date.now() - started,
+            rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
+            rateLimitReset: response.headers.get("x-ratelimit-reset"),
+        });
         throw new Error(`GitHub releases responded ${response.status}`);
     }
     const payload: unknown = await response.json();
     if (!Array.isArray(payload)) {
+        debug(`release notes: ${repo} did not return an array`, {payload});
         throw new Error("GitHub releases did not return an array");
     }
     const releases = payload
@@ -97,5 +114,14 @@ export const fetchReleases = async (repo: string, settings: ISettings): Promise<
         // published_at 是 ISO 8601，字典序就是时间序
         .sort((a, b) => a.publishedAt < b.publishedAt ? 1 : a.publishedAt > b.publishedAt ? -1 : 0);
     cache.set(key, {time: Date.now(), releases});
+    debug(`release notes: ${repo} kept ${releases.length} of ${payload.length}`, {
+        elapsed: Date.now() - started,
+        rateLimitRemaining: response.headers.get("x-ratelimit-remaining"),
+        releases: releases.map((item) => ({
+            tag: item.tag,
+            publishedAt: item.publishedAt,
+            bytes: item.markdown.length,
+        })),
+    });
     return releases;
 };
