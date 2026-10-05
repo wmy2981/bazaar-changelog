@@ -11,16 +11,16 @@
   "update": "Update",
   "releaseNotesTip": "View the changelog for v${version}",
   "releaseNotesEmpty": "This version has no release notes",
-  "releaseNotesUnavailable": "Release notes are unavailable",
+  "releaseNotesUnavailable": "Failed to load the release notes",
   "changelogMissing": "This repository has no CHANGELOG",
-  "changelogTimeout": "Loading the CHANGELOG timed out",
-  "packageUnavailable": "The bazaar package info is unavailable",
+  "changelogTimeout": "Timed out loading the CHANGELOG",
+  "packageUnavailable": "Failed to load the bazaar package info",
   "preferredSource": "Preferred source",
-  "preferredSourceTip": "Which source the changelog dialog opens with. Release notes are listed per version; CHANGELOG reads the changelog file in the repository. If the preferred one is unavailable, this open switches to the other.",
+  "preferredSourceTip": "Which source the changelog dialog opens with. Release notes are listed per version; CHANGELOG reads the CHANGELOG.md file in the repository. If the preferred one is unavailable, this open switches to the other.",
   "githubAcceleration": "GitHub acceleration",
   "githubAccelerationTip": "When off, only api.github.com is requested. When on, release notes requests go through the acceleration URL below.",
   "githubAccelerationURL": "Acceleration URL",
   "githubAccelerationURLTip": "A prefix proxy prepended to the original URL, for example https://gh-proxy.com/ . Left empty or not an http(s) URL, it is ignored.",
   "debugMode": "Debug mode",
-  "debugModeTip": "Print complete plugin logs to the console for troubleshooting; leave it off normally."
+  "debugModeTip": "Print complete plugin logs to the console."
 }
