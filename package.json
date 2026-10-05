@@ -1,0 +1,31 @@
+{
+  "name": "bazaar-changelog",
+  "version": "0.1.0",
+  "description": "Show bazaar package release notes and repository CHANGELOG in SiYuan",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "dev": "webpack --mode development",
+    "build": "webpack --mode production",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run build",
+    "icon": "node scripts/render-icon.mjs",
+    "preview": "node scripts/render-preview.mjs"
+  },
+  "devDependencies": {
+    "copy-webpack-plugin": "^14.0.0",
+    "css-loader": "^7.1.5",
+    "esbuild-loader": "^4.5.0",
+    "mini-css-extract-plugin": "^2.10.2",
+    "playwright": "^1.63.0",
+    "sass": "^1.105.1",
+    "sass-loader": "^17.0.1",
+    "sharp": "^0.35.5",
+    "siyuan": "^1.2.9",
+    "typescript": "^7.0.2",
+    "webpack": "^5.111.1",
+    "webpack-cli": "^7.2.3",
+    "zip-webpack-plugin": "^4.0.3"
+  }
+}

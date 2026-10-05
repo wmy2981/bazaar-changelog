@@ -1,0 +1,2 @@
+# 仓库内统一 LF，避免 Windows 工作树的 CRLF 与脚本/CI 冲突
+* text=auto eol=lf

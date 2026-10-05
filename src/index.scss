@@ -1,0 +1,53 @@
+// 更新日志弹窗：沿用思源原生 .b3-dialog__container / .b3-dialog__body 结构，
+// 这里只补「头部固定、正文滚动」的布局。颜色、边框、圆角一律取 --b3-* 变量。
+
+.bazaar-release-notes {
+  // 类名落在 .b3-dialog__container 自己身上（.b3-dialog__container 是 flex column），
+  // 所以下面写的是它本身的属性，不是后代选择器。内容不超过视口时高度仍然自适应。
+  max-height: 85vh;
+
+  &__head {
+    align-items: center;
+    border-bottom: 1px solid var(--b3-theme-surface-lighter);
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px 24px;
+  }
+
+  &__label {
+    color: var(--b3-theme-on-surface);
+    flex: 0 0 auto;
+  }
+
+  &__select {
+    flex: 1;
+    min-width: 0;
+  }
+
+  // 来源只有两项，按内容宽度即可；剩余空间留给版本列表
+  &__select--source {
+    flex: 0 1 auto;
+  }
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px 24px;
+  }
+}
+
+// 集市包详情页「集市信息 - 版本」的值：与同页资源链接同色，做成可点开的按钮。
+.item__version-link {
+  background-color: transparent;
+  border: 0;
+  color: var(--b3-theme-primary);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  padding: 0;
+  text-decoration: underline;
+}
