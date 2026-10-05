@@ -1,153 +1,56 @@
 # bazaar-changelog 实现说明
 
-思源插件：把集市包的 GitHub 发行说明与仓库 CHANGELOG 做成思源的「更新日志」弹窗，
-并用同一个弹窗替代集市更新的原生确认弹窗。用户可见的行为、设置表与限制见
-[README.zh-CN.md](./README.zh-CN.md)，这里只写「这个项目怎么实现」。
+思源插件：把集市包的 GitHub 发行说明与仓库 CHANGELOG 做成思源的「更新日志」弹窗，并用同一个弹窗
+替代集市更新的原生确认弹窗。用户可见的行为、设置表与限制见 [README.zh-CN.md](./README.zh-CN.md)，
+这里只写「为什么这么做」——代码里看得出来的不再重复。
 
-## 模块划分
+## 挂在思源内部结构上的三处
 
-| 文件 | 职责 |
-| --- | --- |
-| `src/index.ts` | 插件入口：读设置、注册设置面板、挂上 DOM 观察与点击拦截，`onunload` 成对清理 |
-| `src/settings.ts` | 设置结构、默认值与 `mergeSettings()` 校验 |
-| `src/github.ts` | GitHub Releases 客户端：仓库地址解析、加速前缀、超时、30 分钟内存缓存 |
-| `src/changelog.ts` | jsDelivr 上的 CHANGELOG 并发加载与「没有 / 超时」判定 |
-| `src/bazaar.ts` | 内核 `/api/bazaar/getBazaarPackage`，取集市下发的仓库地址与版本 |
-| `src/render.ts` | 内核 `/api/lute/md2html` 渲染 + DOMPurify 消毒 + 相对链接补全 |
-| `src/version.ts` | 版本号比较与「同一版本」判定（纯函数） |
-| `src/dialog.ts` | 「更新日志」弹窗：来源下拉、版本下拉、两种来源互相回退、确认回调 |
-| `src/bazaarDom.ts` | 把集市详情页「集市信息 - 版本」换成可点开的按钮 |
-| `src/update.ts` | 拦截集市「更新」按钮，用更新日志弹窗确认后再重放点击 |
-| `src/i18n.ts` / `src/escape.ts` | 文案取值与 HTML 转义 |
-| `src/logger.ts` | 调试日志开关与带前缀的 `debug()` / `warn()` |
-| `src/globals.d.ts` | `window.DOMPurify` 声明 |
-| `scripts/build-preview-css.mjs` | 从思源源码编译预览用的原生样式到 `assets/preview.css` |
+下面三处依赖思源的实现细节，思源一改就失效。动到它们时，请一并更新这里。
 
-## 关键实现
+- **集市详情页的版本入口**：思源每次渲染详情页都用 `innerHTML` 整块换掉 `#configBazaarReadme`，
+  所以入口只能靠 `MutationObserver` 在替换之后重新补；入口做成 `<button>` 而不是 `<a>`，因为思源的
+  集市 click 委托会丢弃 `<a>` 上的点击。「集市信息」分组优先用
+  `window.siyuan.languages.bazaarMarketInfo` 定位，取不到才退回「同一分组里含『发行日期』的那一行」，
+  否则会误认安装信息里的「版本」。
+- **更新按钮**：思源的「更新」走集市自己的 click 委托，插件改不了它的回调，只能捕获阶段拦下、
+  先弹自己的弹窗、确认后再**重放**一次点击，让思源原生流程（loading、列表刷新、错误提示）照常跑完。
+  重放是同步的，返回时原生确认弹窗已经建好，必须**在同一帧里**点掉它并把元素从 DOM 摘掉：思源的
+  `Dialog` 要 50ms 才加 `b3-dialog--open`，而 `destroy()` 要 190ms 才移除元素，只点确认会闪一下。
+  拿不到 `window.siyuan.dialogs` / `#confirmDialogConfirmBtn` 时插件不动任何弹窗，只留一条 console
+  警告，绝不自己实现一套更新流程。
+- **插件设置面板**：思源会把每个 input/textarea 交给 `dialog.bindInput()`，而它第一件事就是
+  `focus()`，且这次 focus 发生在元素插入 DOM 之前；移动端重写了 `focus()`，只要 `canInput()` 判为
+  可输入就调原生 `showKeyboard()`，于是设置面板一打开就弹键盘。修法是建输入框时先写上
+  `setAttribute("readonly", "readonly")`，本轮任务结束再摘掉。属性值必须正好是 `"readonly"`：
+  3.7.x 的 `canInput()` 比的是 `getAttribute("readonly") === "readonly"`，只设 `element.readOnly`
+  得到的是空字符串。
 
-### 集市详情页的版本入口
+## 几处刻意的取舍
 
-思源每次渲染集市详情页都用 `innerHTML` 整块换掉 `#configBazaarReadme`，所以用
-`MutationObserver` 盯 `document.body`：新节点落在该容器里就补一次版本按钮。
-按钮带 `data-type="release-notes"`，插件自己在捕获阶段接管点击
-（思源的集市 click 委托会直接丢弃 `<a>` 上的点击，所以用 `<button>`）。
-
-「集市信息」分组靠标题 `window.siyuan.languages.bazaarMarketInfo` 定位，
-标题取不到时退回「同一分组里含『发行日期』那一行」，避免误认安装信息里的「版本」。
-
-### 用更新日志弹窗确认更新
-
-思源的「更新」按钮走的是集市自己的 click 委托，插件无法改它的回调，所以：
-
-1. 捕获阶段拦下这次点击（`stopPropagation` + `preventDefault`），思源的委托不再执行；
-2. 查集市包信息拿到仓库地址与集市版本，打开「更新日志」弹窗；
-3. 用户点「更新」后，插件**重放**一次点击（事件上打 `releaseNoteReplayed` 标记让自己放行），
-   思源原生的更新流程（loading、`_genMyHTML`、`_checkUpdate`、错误提示）完整跑一遍；
-4. 思源的委托是同步的，重放返回时原生确认弹窗已经建好，插件在同一帧里点它的确认按钮、
-   再把它的元素从 DOM 摘掉，用户看不到。
-
-第 4 步依赖 `window.siyuan.dialogs` 与 `#confirmDialogConfirmBtn`；`data-key` 不是
-`dialog-confirm` 时插件不动任何弹窗并留一条 console 警告，绝不自己实现一套更新流程。
-
-「摘掉元素」不能省：思源 `Dialog` 构造后 50ms（`TIMEOUT_OPENDIALOG`）才加 `b3-dialog--open`，
-而 `destroy()` 要 190ms（`TIMEOUT_DBLCLICK`）后才移除元素，中间那 140ms 原生弹窗会真的显示出来。
-只点确认 + `destroy()` 会闪一下，所以要在同一帧里 `native.element.remove()`。
-
-### 「最新」判定
-
-不再看 GitHub API 的 `latest`：先取集市下发的 `available.version`，把 GitHub 上版本号
-大于它的发行版整条丢掉，再把与它同版本的发行版标成「最新」并默认选中。
-集市取不到版本时退化为「按 GitHub 上的最新发行版展示」。
-
-### 发行说明 / CHANGELOG
-
-- 弹窗顶部第一个下拉是来源，第二个是版本；来源为 CHANGELOG 时隐藏版本下拉。
-- 打开时按设置里的优先来源加载，两个方向都只回退一次，不写回设置：
-  集市这一版没有发行说明（GitHub 上没有对应 tag、正文为空、或请求失败）→ 本次改看 CHANGELOG；
-  默认 CHANGELOG 但仓库没有 changelog → 本次改回发行说明。用户手动切换后不再抢他的选择。
-- CHANGELOG 走 `cdn.jsdelivr.net`，`CHANGELOG.md` / `docs/CHANGELOG.md` / `doc/CHANGELOG.md`
-  三个候选**并发**请求（不带 ref，jsDelivr 落到仓库默认分支），谁先 200 就用谁，
-  拿到后立刻 `AbortController.abort()` 掉剩下的。
-  三个都 404 → 提示「这个仓库没有 CHANGELOG」；超时或请求失败 → 提示超时。
-  成功结果按仓库缓存，失败不缓存。
-
-### 超时与重试
-
-- 两条加载路径的首次超时都是 3 秒（`TIMEOUT`），由各自 `AbortController` + 定时器实现：
-  `fetchReleases()` 失败时 `abort()`，`fetchChangelog()` 整体 `abort()`。
-- 超时**不自动换来源**：同一条线路慢，换到另一种也一样慢，只会多等 3 秒。
-  `missing`（确实没有）才按上面的规则回退。
-- 超时提示后面挂一个链接样式的「重新获取」（`.bazaar-release-notes__retry`），
-  点了把该弹窗的超时改成 7 秒（`RETRY_TIMEOUT`）并重跑当前来源；这之后本弹窗内所有加载都用 7 秒。
-- 区分超时与普通失败：`fetchReleases()` 返回 `ok / missing / timeout / error` 四种状态
-  （`error` 仍按原来的回退处理，保住 GitHub 限流时自动看 CHANGELOG 的行为）；
-  `fetchChangelog()` 只有 `ok / missing / timeout` 两种失败态，重试是唯一有意义的动作。
-
-### GitHub 加速
-
-默认只打 `https://api.github.com`。设置里打开开关且加速地址是 http(s) 时，
-请求地址变成 `<加速地址><原始地址>`（前缀式反代，与上游实现一致）；
-地址非法或未开启时按原地址请求。该开关只作用于发行说明接口。
-
-### 设置面板在移动端不弹键盘
-
-思源构建插件设置弹窗时会把每个 `input`/`textarea` 交给 `dialog.bindInput()`，而它第一件事就是
-`focus()` 一次，且这次调用发生在元素插入 DOM 之前。移动端改写了 `HTMLElement.prototype.focus()`，
-只要 focus 到思源 `canInput()` 认为「可输入」的元素就调原生 `showKeyboard()`——不看元素是否在文档里，
-所以「加速地址」输入框会让打开设置面板时直接弹出键盘。
-
-修法：`suppressOpenKeyboard()` 在输入框建出来时先 `setAttribute("readonly", "readonly")`，本轮任务结束
-（`setTimeout(0)`）再摘掉。构建期间 `canInput()` 判否，键盘不再弹出；之后用户点它照常输入。
-桌面端不弹键盘，这个窗口期也感知不到，所以不区分平台。
-
-属性值必须写成 `"readonly"`：3.7.x（本插件的 `minAppVersion`）的 `canInput()` 判的是
-`getAttribute("readonly") === "readonly"`，只设 `element.readOnly` 只会得到空字符串的属性值，
-在 3.7.x 上照样弹出键盘。
-
-### 预览图
-
-`assets/preview.png` 是 `assets/preview.html` 的截图，画面只有「更新日志」弹窗，元素结构与思源
-`Dialog` 生成的一致，样式全部来自 `assets/preview.css`。
-
-`assets/preview.css` 不手写：跑一次
-
-```bash
-node scripts/build-preview-css.mjs <思源仓库路径>
-```
-
-它把思源 daylight 主题变量、预览用到的思源 SCSS partial（对话框、按钮、下拉、正文排版）与
-本项目的 `src/index.scss` 依次编译拼接。
-
-预览画面只画弹窗的常规状态，所以只有动了预览画面本身（`assets/preview.html`，或 `src/index.scss`
-里预览用得到的那几条规则）才需要重跑上面两条命令；加别的规则不用动这两个文件。
-
-## 调试日志
-
-设置面板最后一项「调试模式」打开后，`console.log` 会输出本插件的完整过程日志，统一前缀
-`[bazaar-changelog]`：插件载入/卸载、设置读写、弹窗打开与来源切换、发行说明的请求地址与耗时
-（含限流余量、被丢掉的版本）、CHANGELOG 的候选地址与命中/404/超时、Markdown 渲染耗时、
-集市详情页增强、更新按钮的拦截与重放。
-
-- 全部走 `src/logger.ts` 的 `debug()`，关闭时一行都不打；不要用裸 `console.log`。
-- `warn()` 只留给「插件没接上」这类异常（集市结构变了、拿不到仓库地址），不受开关影响。
-- 加日志时记上耗时和关键参数，便于用户把输出直接贴回来定位。
+- **「最新」以集市为准**，不看 GitHub API 的 `latest`：集市索引 1–3 小时才更新一次，只有用集市下发的
+  `available.version` 才和用户在集市里看到的一致，比它新的发行版整条不显示。
+- **CHANGELOG 只打 `gcore.jsdelivr.net`**：jsDelivr 默认的 `cdn.jsdelivr.net` 在大陆被 DNS 污染
+  （请求不回来或连接被重置）。代价是 Gcore 不通时没有第二个 CDN 兜底。
+- **只有 404（或 200 但正文空白）算「这个路径上没有文件」**：`403` / `429` / `5xx` / 网络错误只是
+  这次没拿到，拿来报「没有」会骗用户。
+- **确认「没有 CHANGELOG」比首次超时更耐心**：三个候选都 404 才算数，而冷缓存下这几个 404 都要等
+  jsDelivr 回源，很容易擦过首次超时。到点后只要没有候选**真正失败**就继续等（到 `CONFIRM_TIMEOUT`），
+  否则用户会先看到「超时」、点一次「重新获取」才看到「没有 CHANGELOG」；真正失败时立刻放弃。
+- **超时提示分两行**：CHANGELOG 超时本来就把「网络差」和「仓库确实没有」混在一起，第二行把两种
+  可能都写出来，用户才知道重试有没有意义。
+- **超时不自动换来源**：同一条线路慢，换来源也一样慢，只会再多等一次超时；只有确定「没有」才回退。
+- **GitHub 加速只作用于发行说明**：加速地址是实现无关的前缀式反代，拼在 `api.github.com` 前面。
+- **弹窗里的代码块不做语法高亮**：思源是在内部调 `highlightRender()`，插件要用得自己加载内核
+  `/stage/protyle` 下的 highlight.js 与代码主题，收益不值这份复杂度。
 
 ## 约定
 
 - 只用思源原生类与 `--b3-*` 变量，不硬编码思源已暴露的颜色、字号、圆角。
-- 禁止 `fs`、`require("electron")` 等 Node API；持久化只用 `plugin.loadData/saveData`，
-  写完读回校验。
-- `window.siyuan.dialogs`、集市 click 委托的挂载点属于思源内部结构，改动都要在这里同步说明。
-- 弹窗里的代码块不做语法高亮：思源是在内部调 `highlightRender()`，插件要用它得自己加载内核
-  `/stage/protyle` 下的 highlight.js 与代码主题，收益不值这份复杂度，所以按纯文本渲染。
+- 禁止 `fs`、`require("electron")` 等 Node API；持久化只用 `plugin.loadData/saveData`，写完读回校验。
+- 日志一律走 `src/logger.ts`：`debug()` 跟着设置里的「调试模式」，关闭时一行都不打，不要用裸
+  `console.log`；`warn()` 只留给「插件没接上」这类异常。写日志时带上耗时与关键参数，
+  用户好把输出直接贴回来定位。
+- `assets/preview.css` 不手写，由 `scripts/build-preview-css.mjs <思源仓库路径>` 从思源源码编译；
+  预览画面只画弹窗的常规状态，所以只有动了预览画面本身才需要重跑编译与 `npm run preview`。
 - 构建产物（`dist/`、`package.zip`、仓库根 `index.js` / `index.css` / `i18n/`）不入库。
-
-## 常用命令
-
-```bash
-npm run typecheck
-npm run build
-npm run icon
-node scripts/build-preview-css.mjs <思源仓库路径>
-npm run preview
-```
