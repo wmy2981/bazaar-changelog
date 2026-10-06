@@ -1,5 +1,6 @@
 import {Plugin, Setting, showMessage} from "siyuan";
 import {observeBazaarReadme} from "./bazaarDom";
+import {probeGithub} from "./github";
 import type {TI18n} from "./i18n";
 import {t} from "./i18n";
 import "./index.scss";
@@ -9,6 +10,17 @@ import type {ISettings} from "./settings";
 import {interceptBazaarUpdate} from "./update";
 
 const STORAGE_NAME = "settings";
+/**
+ * 「探测过没有」单独存一个键：设置面板落盘的是整份设置对象，把探测标记塞进去的话，
+ * 面板一次确认就会把它按默认值冲掉，于是每次启动都重新探测。
+ */
+const PROBE_STORAGE_NAME = "githubProbe";
+/** 探测用本仓库 README 的直连地址，故意不过加速：要测的就是直连这条路。 */
+const PROBE_URL = "https://raw.githubusercontent.com/wmy2981/bazaar-changelog/HEAD/README.md";
+/** 探测超时比弹窗宽：慢线路首次握手就可能超过弹窗那 3 秒，误判会白开加速。 */
+const PROBE_TIMEOUT = 5000;
+/** 这条提示说了设置被改过，给用户留出读完的时间。 */
+const TOAST_TIMEOUT = 10000;
 
 export default class ReleaseNotePlugin extends Plugin {
     private settings: ISettings = {...DEFAULT_SETTINGS};
@@ -19,7 +31,15 @@ export default class ReleaseNotePlugin extends Plugin {
     private debugElement: HTMLInputElement | undefined;
 
     override async onload() {
-        this.settings = mergeSettings(await this.loadData(STORAGE_NAME).catch(() => undefined));
+        const saved = await this.loadData(STORAGE_NAME).catch(() => undefined);
+        this.settings = mergeSettings(saved);
+        // 旧版本的默认地址是空串，升级上来的用户盘里可能存着它：补上现在的默认地址，
+        // 开关状态与其他设置一律不动（新装不会走到这里，它的默认值本来就非空）
+        if (!this.settings.githubAccelerationURL) {
+            debug("settings: filling the empty acceleration URL with the default");
+            this.settings.githubAccelerationURL = DEFAULT_SETTINGS.githubAccelerationURL;
+            await this.persistSettings(this.settings);
+        }
         setDebugEnabled(this.settings.debug);
         debug(`onload: ${this.name} (${this.displayName})`, {
             settings: this.settings,
@@ -81,6 +101,8 @@ export default class ReleaseNotePlugin extends Plugin {
             observeBazaarReadme(this.texts, () => this.settings),
         );
         debug("onload: bazaar readme observer and update interception are attached");
+        // 不 await：探测最长 5 秒，不能拖着插件加载
+        void this.probeGithubOnce(saved);
     }
 
     override onunload() {
@@ -121,6 +143,41 @@ export default class ReleaseNotePlugin extends Plugin {
         }, 0);
     }
 
+    /**
+     * 新装后的唯一一次连通性探测：直连不通就自动打开 GitHub 加速并提示用户。
+     * 只有「一份设置都没有落盘过」才算新装，升级上来的用户不打扰；探测结果另存一个标记，
+     * 这样即使用户从不打开设置面板，也不会每次启动都重新探测、重复弹提示。
+     */
+    private async probeGithubOnce(saved: unknown) {
+        if (typeof saved === "object" && saved !== null) {
+            debug("probe: skipped, settings are already stored");
+            return;
+        }
+        // 读不到标记时当成「已经探过」：宁可漏探，也不要因为读失败反复弹提示
+        if (await this.loadData(PROBE_STORAGE_NAME).catch(() => true)) {
+            debug("probe: skipped, already probed");
+            return;
+        }
+        // 标记先落盘，探测中途出意外也不会每次启动重来；万一写失败，代价只是下次再探一遍
+        await this.saveData(PROBE_STORAGE_NAME, true).catch(() => undefined);
+        if (await probeGithub(PROBE_URL, PROBE_TIMEOUT)) {
+            return;
+        }
+        debug("probe: GitHub is unreachable, enabling acceleration", {url: PROBE_URL});
+        this.settings.githubAcceleration = true;
+        // 默认地址就是 https://gh-proxy.com/，这里再写一次，免得这条行为依赖别处的默认值
+        this.settings.githubAccelerationURL = DEFAULT_SETTINGS.githubAccelerationURL;
+        if (!(await this.persistSettings(this.settings))) {
+            return;
+        }
+        this.syncSettingControls();
+        showMessage(
+            `[${this.displayName}] ${t(this.texts(), "githubAccelerationAutoEnabled")}`,
+            TOAST_TIMEOUT,
+            "error",
+        );
+    }
+
     private async saveSettings() {
         const next = mergeSettings({
             preferredSource: this.sourceElement?.value,
@@ -128,24 +185,34 @@ export default class ReleaseNotePlugin extends Plugin {
             githubAccelerationURL: this.accelerationURLElement?.value,
             debug: this.debugElement?.checked,
         });
+        if (!(await this.persistSettings(next))) {
+            return;
+        }
+        this.syncSettingControls();
+        setDebugEnabled(this.settings.debug);
+    }
+
+    /**
+     * 落盘并读回：宿主的 saveData 在真正写盘前就可能 resolve，必须读回一次确认真实生效的值。
+     * 返回 false 表示没写成，调用方不要再按新值行事。
+     */
+    private async persistSettings(next: ISettings): Promise<boolean> {
         debug("settings: saving", {previous: this.settings, next});
         let response: unknown;
         try {
             response = await this.saveData(STORAGE_NAME, next);
         } catch (error) {
             showMessage(`[${this.name}] ${error}`);
-            return;
+            return false;
         }
         const code = (response as {code?: number} | undefined)?.code;
         if (code !== undefined && code !== 0) {
             showMessage(`[${this.name}] ${(response as {msg?: string}).msg || code}`);
-            return;
+            return false;
         }
-        // 宿主的 saveData 在真正落盘前就可能 resolve，读回一次确认真实生效的值
         this.settings = mergeSettings(await this.loadData(STORAGE_NAME).catch(() => next));
-        this.syncSettingControls();
-        setDebugEnabled(this.settings.debug);
         debug("settings: saved", {settings: this.settings});
+        return true;
     }
 
     private syncSettingControls() {

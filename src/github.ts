@@ -154,3 +154,33 @@ export const fetchReleases = async (repo: string, settings: ISettings, timeoutMs
         window.clearTimeout(timer);
     }
 };
+
+/**
+ * 只探「直连 GitHub 通不通」：收到任何响应（包括 404）都算通，只有连不上和超时算不通。
+ * 新装后据此决定要不要自动开加速，所以不能因为对方回了个错误码就说线路有问题；
+ * 调用方传直连地址，加速开关不该影响这次判断。
+ */
+export const probeGithub = async (url: string, timeoutMs: number): Promise<boolean> => {
+    debug(`probe: GET ${url}`, {timeoutMs});
+    const started = Date.now();
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = window.setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+    }, timeoutMs);
+    try {
+        const response = await fetch(url, {signal: controller.signal});
+        debug(`probe: ${url} responded ${response.status}`, {elapsed: Date.now() - started});
+        return true;
+    } catch (error) {
+        debug(`probe: ${url} ${timedOut ? "timed out" : "failed"}`, {
+            elapsed: Date.now() - started,
+            timeoutMs,
+            error: String(error),
+        });
+        return false;
+    } finally {
+        window.clearTimeout(timer);
+    }
+};
