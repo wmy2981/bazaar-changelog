@@ -1,9 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
-  <!-- GitHub UI 风格：白底方形，不放圆角。主图是 Primer octicons 的 tag-16（发布标签），
-       取 GitHub 浅色界面的成功色 #1a7f37，标签上的圆点同色。 -->
+  <!-- GitHub UI 风格：纯白满版底，不放圆角，集市卡片自己会加 border-radius。主图是 Primer octicons 的
+       tag-16（发布标签），取 GitHub 浅色界面的成功色 #1a7f37。图形在 octicon 的 16 单位坐标系里画好
+       再放大 6 倍：标签外框 88/160（约 55%，上一版是 103/160），比例对齐 button-in-siyuan 的图标。
+       磨砂质感比那个图标收着用：底保持纯白，只留图形模糊出来的柔光和极淡的噪点；标签内部另填一层
+       几乎不透明白，把柔光挡在标签外面，标签里只透进一点绿。玻璃填充区直接取主路径里的内轮廓，
+       不引入第二个 octicon。 -->
+  <defs>
+    <linearGradient id="bcl-icon-glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.8"/>
+    </linearGradient>
+    <filter id="bcl-icon-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="bcl-icon-grain" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+    </filter>
+  </defs>
   <rect width="160" height="160" fill="#ffffff"/>
-  <g transform="translate(24 24) scale(7)">
+  <g opacity="0.32" filter="url(#bcl-icon-glow)">
+    <g transform="translate(29.86 29.86) scale(6)">
+      <path fill="#1a7f37" d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/>
+    </g>
+  </g>
+  <g transform="translate(29.86 29.86) scale(6)">
+    <path fill="url(#bcl-icon-glass)" d="M2.5 7.775c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25Z"/>
     <path fill="#1a7f37" d="M1 7.775V2.75C1 1.784 1.784 1 2.75 1h5.025c.464 0 .91.184 1.238.513l6.25 6.25a1.75 1.75 0 0 1 0 2.474l-5.026 5.026a1.75 1.75 0 0 1-2.474 0l-6.25-6.25A1.752 1.752 0 0 1 1 7.775Zm1.5 0c0 .066.026.13.073.177l6.25 6.25a.25.25 0 0 0 .354 0l5.025-5.025a.25.25 0 0 0 0-.354l-6.25-6.25a.25.25 0 0 0-.177-.073H2.75a.25.25 0 0 0-.25.25ZM6 5a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/>
   </g>
-  <circle cx="66" cy="66" r="7.5" fill="#1a7f37"/>
+  <rect width="160" height="160" filter="url(#bcl-icon-grain)" opacity="0.04"/>
 </svg>
