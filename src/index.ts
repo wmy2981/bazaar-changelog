@@ -4,7 +4,7 @@ import {probeGithub} from "./github";
 import type {TI18n} from "./i18n";
 import {t} from "./i18n";
 import "./index.scss";
-import {debug, setDebugEnabled} from "./logger";
+import {debug, setDebugEnabled, warn} from "./logger";
 import {DEFAULT_SETTINGS, mergeSettings} from "./settings";
 import type {ISettings} from "./settings";
 import {interceptBazaarUpdate} from "./update";
@@ -108,6 +108,26 @@ export default class ReleaseNotePlugin extends Plugin {
     override onunload() {
         this.disposers.splice(0).forEach((dispose) => dispose());
         debug("onunload: listeners removed");
+    }
+
+    /**
+     * 卸载时清掉插件私有存储。思源卸载只删 `data/plugins/<name>`、集市包信息和发布数据，
+     * `data/storage/petal/<name>` 是留着的（集市详情里那个「打开存储位置」就是给你去删它），
+     * 不自己清的话，下次装回来会读到上一轮留下的设置与探测标记。禁用/重载不会走到这里，
+     * 数据照旧保留。
+     */
+    override async uninstall() {
+        for (const name of [STORAGE_NAME, PROBE_STORAGE_NAME]) {
+            try {
+                const response = await this.removeData(name) as {code?: number, msg?: string} | undefined;
+                // 404 是这个文件本来就没写过，不算失败；其余非 0 都要留下痕迹
+                if (response?.code !== undefined && response.code !== 0 && response.code !== 404) {
+                    warn(`uninstall: removing ${name} failed`, {code: response.code, msg: response.msg});
+                }
+            } catch (error) {
+                warn(`uninstall: removing ${name} failed`, {error: String(error)});
+            }
+        }
     }
 
     private readonly texts = (): TI18n => this.i18n;
