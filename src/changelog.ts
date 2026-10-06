@@ -1,16 +1,18 @@
+import {resolveGithubURL} from "./github";
 import {debug} from "./logger";
+import type {ISettings} from "./settings";
 
 /** 仓库里的 changelog 文件，三个路径同时找。 */
 const PATHS = ["CHANGELOG.md", "docs/CHANGELOG.md", "doc/CHANGELOG.md"];
 /**
- * 唯一的入口。不带 ref 时 jsDelivr 落到仓库默认分支，所以一个仓库只有这三个候选。
- * 默认的 cdn.jsdelivr.net 在大陆被 DNS 污染，Gcore 节点是能用的那个。
+ * 唯一的入口。raw 必须带 ref（不带会 400），统一写 HEAD，由 GitHub 解析成仓库默认分支，
+ * 所以一个仓库只有上面这三个候选。
  */
-const CDN = "https://gcore.jsdelivr.net/gh";
+const RAW = "https://raw.githubusercontent.com";
 /**
- * 「这个仓库没有 CHANGELOG」要三个候选都 404 才算数，而冷缓存下这三个 404 都要等 jsDelivr
- * 回源，很容易擦过首次加载的 3 秒——用户先看到「超时」，点一次「重新获取」才看到「没有
- * CHANGELOG」，而这本来第一次就能给出来。所以只要还没有候选**真正失败**，就等到这里为止。
+ * 「这个仓库没有 CHANGELOG」要三个候选都 404 才算数，而慢网络下这几个 404 也可能擦过首次
+ * 加载的 3 秒——用户先看到「超时」，点一次「重新获取」才看到「没有 CHANGELOG」，而这本来
+ * 第一次就能给出来。所以只要还没有候选**真正失败**，就等到这里为止。
  * 真正失败（连不上、403、5xx）时不等：入口有问题，等下去也不会有答案。
  */
 const CONFIRM_TIMEOUT = 8000;
@@ -28,29 +30,35 @@ class MissingFileError extends Error {}
 const cache = new Map<string, string>();
 
 /**
- * 取仓库的 changelog 正文，走 gcore.jsdelivr.net，不打 GitHub 原始地址。
+ * 取仓库的 changelog 正文，走 raw.githubusercontent.com；开了加速就和发行说明一样改写地址。
  * 三个路径并发，谁先 200 就用谁；三个都 404 才算「这个仓库没有 CHANGELOG」。
  */
-export const fetchChangelog = async (repo: string, timeoutMs: number): Promise<TChangelogResult> => {
+export const fetchChangelog = async (repo: string, settings: ISettings, timeoutMs: number): Promise<TChangelogResult> => {
     const cached = cache.get(repo);
     if (cached !== undefined) {
         debug(`CHANGELOG: cache hit for ${repo}`, {bytes: cached.length});
         return {status: "ok", markdown: cached};
     }
-    debug(`CHANGELOG: ${repo} tried in parallel`, {base: CDN, PATHS, timeoutMs, confirmTimeout: CONFIRM_TIMEOUT});
+    const urls = PATHS.map((filePath) => resolveGithubURL(`${RAW}/${repo}/HEAD/${filePath}`, settings));
+    debug(`CHANGELOG: ${repo} tried in parallel`, {
+        urls,
+        timeoutMs,
+        confirmTimeout: CONFIRM_TIMEOUT,
+        acceleration: settings.githubAcceleration,
+    });
     const started = Date.now();
     const controller = new AbortController();
     /** 已经有候选真正失败（连不上 / 403 / 5xx）：这是入口的问题，不值得再等。 */
     let failed = false;
-    const requests = PATHS.map((filePath) =>
-        fetchOne(`${CDN}/${repo}/${filePath}`, controller.signal).catch((error: unknown) => {
+    const requests = urls.map((url) =>
+        fetchOne(url, controller.signal).catch((error: unknown) => {
             if (!(error instanceof MissingFileError)) {
                 failed = true;
             }
             throw error;
         }));
     let timer = 0;
-    /** 到点先别急着放弃：还没有真正失败就说明入口是通的，只是回源慢。 */
+    /** 到点先别急着放弃：还没有真正失败就说明线路慢，而不是拿不到。 */
     const alarm = () => {
         const elapsed = Date.now() - started;
         if (!failed && elapsed < CONFIRM_TIMEOUT) {

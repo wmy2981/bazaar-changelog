@@ -21,7 +21,7 @@
   "preferredSource": "Preferred source",
   "preferredSourceTip": "Which source the changelog dialog opens with. Release notes are listed per version; CHANGELOG reads the CHANGELOG.md file in the repository. If the preferred one is unavailable, this open switches to the other.",
   "githubAcceleration": "GitHub acceleration",
-  "githubAccelerationTip": "When off, only api.github.com is requested. When on, release notes requests go through the acceleration URL below.",
+  "githubAccelerationTip": "When off, only api.github.com and raw.githubusercontent.com are requested. When on, both release notes and CHANGELOG requests go through the acceleration URL below.",
   "githubAccelerationURL": "Acceleration URL",
   "githubAccelerationURLTip": "A prefix proxy prepended to the original URL, for example https://gh-proxy.com/ . Left empty or not an http(s) URL, it is ignored.",
   "debugMode": "Debug mode",

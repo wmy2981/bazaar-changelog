@@ -30,17 +30,20 @@
 
 - **「最新」以集市为准**，不看 GitHub API 的 `latest`：集市索引 1–3 小时才更新一次，只有用集市下发的
   `available.version` 才和用户在集市里看到的一致，比它新的发行版整条不显示。
-- **CHANGELOG 只打 `gcore.jsdelivr.net`**：jsDelivr 默认的 `cdn.jsdelivr.net` 在大陆被 DNS 污染
-  （请求不回来或连接被重置）。代价是 Gcore 不通时没有第二个 CDN 兜底。
+- **CHANGELOG 与发行说明都走 GitHub 官方域名**：CHANGELOG 拼
+  `https://raw.githubusercontent.com/<owner>/<repo>/HEAD/<path>`。raw 不带 ref 会 400，所以固定写
+  `HEAD`，由 GitHub 解析成仓库默认分支。它和 `api.github.com` 一样在大陆常常不可达，好处是两者
+  同属 GitHub 官方域名，一个前缀式加速开关就能同时覆盖，不必为 CDN 单开一条路。
 - **只有 404（或 200 但正文空白）算「这个路径上没有文件」**：`403` / `429` / `5xx` / 网络错误只是
   这次没拿到，拿来报「没有」会骗用户。
-- **确认「没有 CHANGELOG」比首次超时更耐心**：三个候选都 404 才算数，而冷缓存下这几个 404 都要等
-  jsDelivr 回源，很容易擦过首次超时。到点后只要没有候选**真正失败**就继续等（到 `CONFIRM_TIMEOUT`），
+- **确认「没有 CHANGELOG」比首次超时更耐心**：三个候选都 404 才算数，而慢网络下这几个 404 也可能
+  擦过首次超时。到点后只要没有候选**真正失败**就继续等（到 `CONFIRM_TIMEOUT`），
   否则用户会先看到「超时」、点一次「重新获取」才看到「没有 CHANGELOG」；真正失败时立刻放弃。
 - **超时提示分两行**：CHANGELOG 超时本来就把「网络差」和「仓库确实没有」混在一起，第二行把两种
   可能都写出来，用户才知道重试有没有意义。
 - **超时不自动换来源**：同一条线路慢，换来源也一样慢，只会再多等一次超时；只有确定「没有」才回退。
-- **GitHub 加速只作用于发行说明**：加速地址是实现无关的前缀式反代，拼在 `api.github.com` 前面。
+- **GitHub 加速对发行说明与 CHANGELOG 都生效**：加速地址是实现无关的前缀式反代，分别拼在
+  `api.github.com` 与 `raw.githubusercontent.com` 前面。
 - **弹窗里的代码块不做语法高亮**：思源是在内部调 `highlightRender()`，插件要用得自己加载内核
   `/stage/protyle` 下的 highlight.js 与代码主题，收益不值这份复杂度。
 

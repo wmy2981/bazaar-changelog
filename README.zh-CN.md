@@ -18,15 +18,16 @@
 - **发行说明为空时自动改看 CHANGELOG**：打开弹窗那一刻如果集市这一版没有发行说明，
   本次自动切到 CHANGELOG；默认 CHANGELOG 而仓库没有 changelog 时反过来切回发行说明。
   下一次打开仍按设置里的优先来源。
-- **GitHub 加速开关**：默认只访问 `api.github.com`，需要时在插件设置里手动填一个加速地址并打开开关。
+- **GitHub 加速开关**：默认分别直连 `api.github.com` 与 `raw.githubusercontent.com`，需要时在插件
+  设置里手动填一个加速地址并打开开关，发行说明与 CHANGELOG 的请求都会改走它。
 
 ## 设置
 
 | 设置项 | 默认值 | 说明 |
 | --- | --- | --- |
 | 优先加载 | 发行说明 | 打开更新日志弹窗时默认显示哪一种来源。 |
-| GitHub 加速 | 关闭 | 关闭时只访问 `api.github.com`。 |
-| 加速地址 | 空 | 前缀式反代地址，例如 `https://gh-proxy.com/` 。开启加速且地址是 http(s) 时，发行说明请求会拼在它后面。 |
+| GitHub 加速 | 关闭 | 关闭时发行说明直连 `api.github.com`，CHANGELOG 直连 `raw.githubusercontent.com`。 |
+| 加速地址 | 空 | 前缀式反代地址，例如 `https://gh-proxy.com/` 。开启加速且地址是 http(s) 时，发行说明与 CHANGELOG 请求都会拼在它后面。 |
 | 调试模式 | 关闭 | 在控制台输出本插件的完整过程日志（请求地址、耗时、版本过滤、回退原因等），前缀为 `[bazaar-changelog]`。 |
 
 ## 数据来源
@@ -34,12 +35,11 @@
 - **发行说明**：GitHub Releases API（`https://api.github.com/repos/<owner>/<repo>/releases`），
   最多 100 条，过滤草稿，按发布时间倒序；同一仓库 30 分钟内只请求一次。超时的不算失败，
   仍可点「重新获取」。
-- **CHANGELOG**：走 `https://gcore.jsdelivr.net/gh/<owner>/<repo>/<path>`（jsDelivr 默认的
-  `cdn.jsdelivr.net` 在大陆被 DNS 污染，所以只用 Gcore 节点），`path` 为 `CHANGELOG.md`、
-  `docs/CHANGELOG.md`、`doc/CHANGELOG.md` 三个候选**并发**请求，谁先返回 200 就用谁，
-  随后取消其余请求（不带 ref 时 jsDelivr 取仓库默认分支）。只有 `404`（以及 200 但正文为空）
+- **CHANGELOG**：走 `https://raw.githubusercontent.com/<owner>/<repo>/HEAD/<path>`（`HEAD` 由 GitHub
+  解析成仓库默认分支），`path` 为 `CHANGELOG.md`、`docs/CHANGELOG.md`、`doc/CHANGELOG.md`
+  三个候选**并发**请求，谁先返回 200 就用谁，随后取消其余请求。只有 `404`（以及 200 但正文为空）
   算「这个路径上没有文件」；`403` / `429` / `5xx` / 网络错误只算这次没拿到，不会拿来当「没有」。
-  三个候选都是 404 才提示「这个仓库没有 CHANGELOG」（冷缓存下这几个 404 都要等 jsDelivr 回源，
+  三个候选都是 404 才提示「这个仓库没有 CHANGELOG」（慢网络下这几个 404 也可能超过首次超时，
   所以这个结论最多等到 8 秒）；其余情况提示超时，并在第二行说明「网络状况差或这个仓库没有
   CHANGELOG」。超时不会自动换来源 —— 同一条线路慢，换来源也拿不到。
 - **集市最新版本**：内核 `/api/bazaar/getBazaarPackage` 的 `available.version`，
@@ -54,8 +54,9 @@
 - 更新确认弹窗依赖思源集市自己的更新流程；若思源改了集市结构，插件会在控制台留一条警告，
   此时更新按钮不再被替换，也不会自己造一套更新流程。
 - 弹窗里的代码块按纯文本渲染，不做语法高亮。
-- GitHub 加速只作用于发行说明接口；CHANGELOG 走 `gcore.jsdelivr.net`，不受该开关影响。
-- CHANGELOG 只打 Gcore 一个入口：它不通时没有第二个 CDN 兜底，会提示超时并给「重新获取」。
+- GitHub 加速对发行说明与 CHANGELOG 都生效；关闭时两者分别直连 `api.github.com` 与
+  `raw.githubusercontent.com`，这两个域名在大陆都可能不可达。
+- CHANGELOG 只有这一个入口，没有第二个 CDN 兜底：拿不到时会提示超时并给「重新获取」。
 
 ## 开发
 

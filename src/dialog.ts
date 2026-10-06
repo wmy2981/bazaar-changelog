@@ -11,7 +11,7 @@ import type {ISettings} from "./settings";
 import {compareVersion, isSameVersion} from "./version";
 
 const CLASS = "bazaar-release-notes";
-/** 首次加载等这么久。国内拉 jsDelivr 常常要好几秒，等不到就给「重新获取」。 */
+/** 首次加载等这么久。国内直连 GitHub 常常拿不到，等不到就给「重新获取」。 */
 const TIMEOUT = 3000;
 /** 点「重新获取」后多等一会儿，慢但能通的仓库这次能拿到。 */
 const RETRY_TIMEOUT = 7000;
@@ -173,7 +173,7 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
         debug(`CHANGELOG: loading for ${repo}`, {autoSwitch, timeoutMs});
         setVersionVisible(false);
         setBody(t(i18n, "loading"));
-        const result = await fetchChangelog(repo, timeoutMs);
+        const result = await fetchChangelog(repo, options.settings, timeoutMs);
         if (isStale(token)) {
             debug("CHANGELOG: response arrived after the request went stale, dropped");
             return;

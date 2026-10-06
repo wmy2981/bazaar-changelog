@@ -21,7 +21,7 @@
   "preferredSource": "优先加载",
   "preferredSourceTip": "打开更新日志弹窗时默认显示的来源。发行说明按版本列出，CHANGELOG 取仓库里的 CHANGELOG.md 文件；默认那种取不到时，本次自动换另一种。",
   "githubAcceleration": "GitHub 加速",
-  "githubAccelerationTip": "关闭时只访问 api.github.com；开启后发行说明的请求改走下面的加速地址。",
+  "githubAccelerationTip": "关闭时只访问 api.github.com 与 raw.githubusercontent.com；开启后发行说明与 CHANGELOG 的请求都改走下面的加速地址。",
   "githubAccelerationURL": "加速地址",
   "githubAccelerationURLTip": "前缀式反代地址，拼在原始地址之前，例如 https://gh-proxy.com/ 。留空或不是 http(s) 地址时不生效。",
   "debugMode": "调试模式",
