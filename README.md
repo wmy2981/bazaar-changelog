@@ -2,13 +2,6 @@
 
 [简体中文](README.zh-CN.md)
 
-> [!IMPORTANT]
-> This plugin does not support SiYuan's **separate settings window** yet (available since SiYuan
-> v3.8.7-alpha.2 and on by default on desktop: Settings → App → General → "Open settings in a
-> separate window"). The bazaar is then rendered in that window while the plugin only runs in the
-> main window, so the version entry and the update confirmation do nothing. As a workaround, turn
-> that option off to keep settings in the main window.
-
 A SiYuan plugin that shows bazaar package release notes and repository changelogs in a native
 "Changelog" dialog, and uses the same dialog to confirm bazaar package updates.
 

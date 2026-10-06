@@ -2,7 +2,7 @@
   "name": "bazaar-changelog",
   "author": "wmy2981",
   "url": "https://github.com/wmy2981/bazaar-changelog",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "3.7.0",
   "backends": [
     "all"
@@ -11,13 +11,14 @@
     "all"
   ],
   "disabledInPublish": true,
+  "settingsWindow": true,
   "displayName": {
     "default": "Bazaar Changelog",
     "zh-CN": "集市更新日志"
   },
   "description": {
-    "default": "Show bazaar package release notes and repository CHANGELOG in SiYuan, and confirm package updates through them",
-    "zh-CN": "在思源里查看集市包的发行说明与仓库 CHANGELOG，并用更新日志弹窗确认集市包更新"
+    "default": "Show bazaar package release notes and repository CHANGELOG in SiYuan, and confirm package updates through them. Already support independent settings windows.",
+    "zh-CN": "在思源里查看集市包的发行说明与仓库 CHANGELOG，并用更新日志弹窗确认集市包更新。已适配独立设置窗口"
   },
   "readme": {
     "default": "README.md",
