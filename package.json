@@ -1,6 +1,6 @@
 {
   "name": "bazaar-changelog",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Show bazaar package release notes and repository CHANGELOG in SiYuan",
   "main": "index.js",
   "license": "MIT",
