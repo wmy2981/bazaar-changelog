@@ -39,6 +39,13 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
     /** 每次加载都换一个号，晚到的响应不能再改 DOM。 */
     let requestID = 0;
     let releases: IRelease[] = [];
+    /**
+     * 本次打开里已经确认「这个仓库没有 CHANGELOG」/「这一版没有发行说明」。
+     * 只认确定性结论（404、该版本正文为空），超时不算；两个都为真时提示合成一句，
+     * 免得用户只看到「这个仓库没有 CHANGELOG」，以为另一条路还有内容。
+     */
+    let changelogMissing = false;
+    let releaseNotesMissing = false;
     /** 首次 3 秒；点过「重新获取」之后一直是 7 秒。 */
     let timeoutMs = TIMEOUT;
     debug(`dialog: opening for ${repo}`, {
@@ -145,8 +152,8 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
             return;
         }
         if (!release.markdown.trim()) {
-            debug(`release notes: ${release.tag} has an empty body`);
-            setBody(t(i18n, "releaseNotesEmpty"));
+            debug(`release notes: ${release.tag} has an empty body`, {changelogMissing});
+            setBody(t(i18n, changelogMissing ? "bothSourcesMissing" : "releaseNotesEmpty"));
             return;
         }
         debug(`release notes: showing ${release.tag}`, {
@@ -184,13 +191,15 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
             return;
         }
         if (result.status === "missing") {
+            changelogMissing = true;
             if (autoSwitch) {
                 debug("CHANGELOG: missing, falling back to the release notes");
                 sourceElement.value = "releaseNotes";
                 await loadReleaseNotes(token, false);
                 return;
             }
-            setBody(t(i18n, "changelogMissing"));
+            // 发行说明刚才也确认没有这一版时，两句话合成一句，别让用户以为另一边还有东西
+            setBody(t(i18n, releaseNotesMissing ? "bothSourcesMissing" : "changelogMissing"));
             return;
         }
         const html = await markdownToHTML(result.markdown);
@@ -227,20 +236,29 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
         releases = options.version ? list.filter((item) => compareVersion(item.tag, options.version) <= 0) : list;
         const matched = options.version ?
             releases.find((item) => isSameVersion(item.tag, options.version)) : releases[0];
+        // 这一版在列表里找不到，或者找到了但正文是空的：首次打开据此回退
+        const nothingForVersion = !matched || !matched.markdown.trim();
+        // 但接口出错时的空列表只说明这次没拿到，不能替用户断言「这一版没有发行说明」；
+        // 拿到列表才更新这个结论，出错时保留上一次的确定性结果
+        if (result.status !== "error") {
+            releaseNotesMissing = nothingForVersion;
+        }
         debug(`release notes: ${releases.length} of ${list.length} kept`, {
             status: result.status,
             bazaarVersion: options.version || "(unknown)",
             dropped: list.filter((item) => !releases.includes(item)).map((item) => item.tag),
             matched: matched?.tag,
+            nothingForVersion,
+            missing: releaseNotesMissing,
         });
-        if (autoSwitch && (!matched || !matched.markdown.trim())) {
+        if (autoSwitch && nothingForVersion) {
             debug("release notes: nothing for the bazaar version, falling back to the CHANGELOG");
             sourceElement.value = "changelog";
             await loadChangelog(token, false);
             return;
         }
         if (releases.length === 0) {
-            setBody(t(i18n, "releaseNotesUnavailable"));
+            setBody(t(i18n, releaseNotesMissing && changelogMissing ? "bothSourcesMissing" : "releaseNotesUnavailable"));
             return;
         }
         const latestTag = matched?.tag || releases[0].tag;

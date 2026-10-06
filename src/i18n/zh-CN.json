@@ -14,6 +14,7 @@
   "releaseNotesUnavailable": "无法获取发行说明",
   "releaseNotesTimeout": "获取发行说明超时",
   "changelogMissing": "这个仓库没有 CHANGELOG",
+  "bothSourcesMissing": "这个仓库没有 CHANGELOG，且该版本没有发行说明",
   "changelogTimeout": "获取 CHANGELOG 超时",
   "changelogTimeoutHint": "网络状况差或这个仓库没有 CHANGELOG",
   "retry": "重新获取",

@@ -14,6 +14,7 @@
   "releaseNotesUnavailable": "Failed to load the release notes",
   "releaseNotesTimeout": "Timed out loading the release notes",
   "changelogMissing": "This repository has no CHANGELOG",
+  "bothSourcesMissing": "This repository has no CHANGELOG, and this version has no release notes",
   "changelogTimeout": "Timed out loading the CHANGELOG",
   "changelogTimeoutHint": "Poor network, or this repository has no CHANGELOG",
   "retry": "Retry",
