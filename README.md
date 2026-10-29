@@ -47,6 +47,10 @@ same dialog.
 - The CHANGELOG has this one entry and no second CDN behind it: when it cannot be fetched the dialog
   reports a timeout and offers "Fetch again".
 
+## Bazaar Stats Graph
+
+![Bazaar stats graph](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/bazaar-changelog?metrics=downloads,rating,ratings&range=all&area=true&lang=en)
+
 ## Development
 
 ```bash

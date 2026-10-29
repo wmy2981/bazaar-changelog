@@ -39,6 +39,10 @@
 - 弹窗里的代码块按纯文本渲染，不做语法高亮。
 - CHANGELOG 只有这一个入口，没有第二个 CDN 兜底：拿不到时会提示超时并给「重新获取」。
 
+## 集市趋势图表
+
+![集市趋势图表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/bazaar-changelog?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)
+
 ## 开发
 
 ```bash
