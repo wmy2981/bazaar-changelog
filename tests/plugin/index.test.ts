@@ -118,6 +118,30 @@ describe("onload", () => {
         });
     });
 
+    it("移动端打开设置面板时给弹窗挂作用域类名，样式表据此关掉入场过渡", async () => {
+        stubState.frontend = "mobile";
+        const plugin = await createPlugin();
+        await plugin.onload();
+        const element = document.createElement("div");
+        (plugin.setting as any).dialog = {element};
+
+        plugin.setting.open("集市更新日志");
+
+        expect(element.classList.contains("bazaar-settings-dialog")).toBe(true);
+    });
+
+    it("桌面端的设置弹窗保持原样，不加那个类名", async () => {
+        stubState.frontend = "desktop";
+        const plugin = await createPlugin();
+        await plugin.onload();
+        const element = document.createElement("div");
+        (plugin.setting as any).dialog = {element};
+
+        plugin.setting.open("集市更新日志");
+
+        expect(element.classList.contains("bazaar-settings-dialog")).toBe(false);
+    });
+
     it("渲染测试窗口只挂在 window 上，且只在调试模式开着时可用", async () => {
         const quiet = await createPlugin();
         await quiet.onload();
