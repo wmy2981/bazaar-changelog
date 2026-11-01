@@ -9,13 +9,13 @@
 
 ## 功能
 
-- **集市包详情页的版本号可点开更新日志**
-- **更新改用更新日志弹窗确认**
-- **多种可选来源**
-- **发行说明为空时自动改看 CHANGELOG**
-- **#PR / Issue 与 @user 变成 GitHub 链接**
-- **快速在 GitHub 中打开**
-- **GitHub 加速**
+- 集市包详情页的版本号可点开更新日志
+- 更新改用更新日志弹窗确认
+- 多种可选来源
+- 发行说明为空时自动改看 CHANGELOG
+- #PR / Issue 与 @user 变成 GitHub 链接
+- 快速在 GitHub 中打开
+- GitHub 加速
 
 ## 数据来源
 
@@ -38,6 +38,10 @@
 - 「最新」与版本过滤都依赖集市索引，索引 1–3 小时才更新一次。
 - 弹窗里的代码块按纯文本渲染，不做语法高亮。
 - CHANGELOG 只有这一个入口，没有第二个 CDN 兜底：拿不到时会提示超时并给「重新获取」。
+
+## 集市趋势图表
+
+![集市趋势图表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/bazaar-changelog?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)
 
 ## 开发
 

@@ -1,4 +1,4 @@
-import {Plugin, Setting, showMessage} from "siyuan";
+import {getFrontend, Plugin, Setting, showMessage} from "siyuan";
 import {openAccelerationDialog} from "./acceleration";
 import {observeBazaarReadme} from "./bazaarDom";
 import type {TI18n} from "./i18n";
@@ -13,6 +13,8 @@ import {hasGithubToken, setGithubToken} from "./token";
 import {interceptBazaarUpdate} from "./update";
 
 const STORAGE_NAME = "settings";
+/** 只挂在插件自己的设置弹窗上，样式表据此关掉入场过渡（见 index.scss）。 */
+const SETTINGS_DIALOG_CLASS = "bazaar-settings-dialog";
 /** 令牌与它的钥匙分开存：设置文件被单独贴出来时不会连带泄漏令牌。 */
 const TOKEN_STORAGE_NAME = "githubToken";
 const TOKEN_KEY_STORAGE_NAME = "githubTokenKey";
@@ -22,6 +24,26 @@ const TOKEN_KEY_STORAGE_NAME = "githubTokenKey";
  * 重载后不会留下上一次的闭包。
  */
 export const RENDER_TEST_COMMAND = "bazaarChangelogRenderTest";
+
+/**
+ * 移动端给插件自己的设置弹窗挂一个作用域类名，让它躲开入场那一帧的白闪。
+ *
+ * 思源的 `Setting` 把弹窗插进文档之后，要等 50ms 才加 `b3-dialog--open`，让面板从 `scale(.8)` +
+ * `opacity: 0` 淡入。`opacity: 0` 的图层在移动端 App 的 WebView 里会被跳过绘制，等到过渡开始才
+ * 补画，于是有一帧把「旧页面 + 半成品的弹窗层」合成到一起 —— 面板又接近满屏，看着就是整块白闪。
+ * 类名让样式表（见 index.scss）把起点透明度抬到 .01：动画还是思源那一套，只是图层插进去就画好。
+ */
+class SettingDialog extends Setting {
+    override open(name: string): void {
+        super.open(name);
+        const frontend = getFrontend();
+        if (frontend !== "mobile" && frontend !== "browser-mobile") {
+            return;
+        }
+        // 插件的类型声明里没有 dialog，运行时是有的；桌面端的设置窗口走异步挂载，这里还没有
+        (this as unknown as {dialog?: {element: HTMLElement}}).dialog?.element.classList.add(SETTINGS_DIALOG_CLASS);
+    }
+}
 
 export default class ReleaseNotePlugin extends Plugin {
     private settings: ISettings = {...DEFAULT_SETTINGS};
@@ -48,7 +70,7 @@ export default class ReleaseNotePlugin extends Plugin {
             readonly: Boolean(window.siyuan.config?.readonly),
         });
 
-        this.setting = new Setting({
+        this.setting = new SettingDialog({
             confirmCallback: () => {
                 void this.saveSettings();
             },

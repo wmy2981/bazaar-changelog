@@ -74,7 +74,7 @@ const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => 
     const i18n = options.i18n;
     const isMobile = ["mobile", "browser-mobile"].includes(getFrontend());
     const confirmable = Boolean(options.onConfirm);
-    /** 移动端可以用思源原生的下方抽屉展示；默认关，设置里手动开。 */
+    /** 移动端默认用思源原生的下方抽屉展示；设置里关掉就退回通用弹窗。 */
     const drawer = isMobile && options.settings.mobileDrawer;
 
     currentDialog?.destroy();

@@ -54,8 +54,8 @@ export const DEFAULT_SETTINGS: ISettings = {
     botReleaseNotesAsEmpty: true,
     // 默认跟 GitHub 移动端一致：用户多数是在手机上翻更新日志，引用就该像手机上那样
     referenceLinkStyle: "mobile",
-    // 新功能默认关闭
-    mobileDrawer: false,
+    // 移动端打开更新日志就该是抽屉，设置里可以退回通用弹窗
+    mobileDrawer: true,
     debug: false,
 };
 
@@ -97,7 +97,8 @@ export const mergeSettings = (saved: unknown): ISettings => {
         // 旧版本是一个开/关：关掉的转成「禁用」，开着的沿用新的默认样式
         referenceLinkStyle: linkStyle === "off" || linkStyle === "mobile" || linkStyle === "web" ?
             linkStyle : value.githubReferences === false ? "off" : DEFAULT_SETTINGS.referenceLinkStyle,
-        mobileDrawer: value.mobileDrawer === true,
+        // 这一项默认也是开的，只有明确存了 false 才关
+        mobileDrawer: value.mobileDrawer !== false,
         debug: value.debug === true,
     };
 };

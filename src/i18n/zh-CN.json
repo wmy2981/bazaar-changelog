@@ -62,7 +62,7 @@
   "githubTokenTip": "令牌加密后存在插件私有存储里，只随发往 api.github.com 的请求发送。可在 <a href=\"https://github.com/settings/tokens\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub 的 Developer Settings</a> 生成，读取公开仓库只需只读权限",
   "tokenNeedsSecureContext": "当前访问方式不支持 Web Crypto，令牌无法加密保存；请用桌面端或 https 访问",
   "mobileDrawer": "移动端底部抽屉",
-  "mobileDrawerTip": "在移动端用思源原生的下方抽屉显示更新日志（实验性）",
+  "mobileDrawerTip": "在移动端用思源原生的下方抽屉显示更新日志",
   "renderTest": "渲染测试用例",
   "debugMode": "调试模式",
   "debugModeTip": "在控制台输出插件调试日志"
