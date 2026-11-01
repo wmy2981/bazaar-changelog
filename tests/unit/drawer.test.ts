@@ -73,15 +73,28 @@ describe("bindMobileDrawer", () => {
     it("弹出前藏在屏幕外，等 b3-dialog--open 再交给 CSS 滑上来", async () => {
         const {dialog, sheet} = await setup({open: false});
 
-        expect(sheet.style.visibility).toBe("hidden");
+        // 弹出前后都不能用 visibility：那会让合成层到打开那一帧才建出来，移动端 App 上会闪一帧
+        expect(sheet.style.visibility).toBe("");
+        expect(dialog.style.visibility).toBe("");
         expect(sheet.style.transform).toBe("translateY(100%)");
         expect(sheet.style.transition).toBe("none");
 
         dialog.classList.add("b3-dialog--open");
         await Promise.resolve();
         expect(sheet.style.visibility).toBe("");
+        expect(dialog.style.visibility).toBe("");
         expect(sheet.style.transform).toBe("");
         expect(sheet.style.transition).toBe("");
+    });
+
+    it("弹出时只改样式，不读布局", async () => {
+        const {dialog} = await setup({open: false});
+        const spy = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get");
+
+        dialog.classList.add("b3-dialog--open");
+        await Promise.resolve();
+        expect(spy).not.toHaveBeenCalled();
+        spy.mockRestore();
     });
 
     it("弹窗建好时已经带着打开类就直接露出，不报错", () => {

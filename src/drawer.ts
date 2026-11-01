@@ -58,10 +58,13 @@ export const bindMobileDrawer = (options: IMobileDrawerOptions): (() => void) =>
      * 弹出：先让它待在屏幕外且不参与过渡，等 `.b3-dialog--open` 落下来再交回 CSS 的
      * `transform .15s cubic-bezier(0, 0, .2, 1)`。不这么摆一道的话，抽屉的位移和通用弹窗的
      * `scale(.8)` / `opacity` 过渡会同时起步，肉眼看到的就是弹出来时抽一下。
+     * 这里刻意不跟着思源的抽屉写 `visibility: hidden`：那会让合成层改成弹出那一帧才建出来，
+     * App 的 WebView 手里只有「层还不存在」时的旧画面，于是每次打开都插进一帧打开前的画面。
+     * 抽屉本来就在 `translateY(100%)` 之外，抽屉模式的遮罩又是全透明的，藏它没有意义 ——
+     * 让图层从插进 DOM 起就一直在，打开时改动的只剩位置。
      */
     sheet.style.transition = "none";
     sheet.style.transform = "translateY(100%)";
-    sheet.style.visibility = "hidden";
     // 状态先声明：下面的同步 branch（弹窗建好时已经带着打开类）会立刻走到 reveal()，用到 closing
     let opened = false;
     let start: {y: number, height: number, fromHandle: boolean, time: number} | undefined;
@@ -74,11 +77,10 @@ export const bindMobileDrawer = (options: IMobileDrawerOptions): (() => void) =>
             return;
         }
         opened = true;
-        sheet.style.visibility = "";
-        // 先落一次可见状态，过渡才会从「底部之外」开始，而不是从当前位置跳上去
-        void sheet.offsetHeight;
+        // transition 与 transform 一起交回 CSS：一次样式更新就能从「底部之外」开始过渡。
+        // 思源在同样的位置还夹了两次 void offsetHeight 强制回流，那是多余的 —— 过渡从哪个值
+        // 起步按改动后的样式算，不靠回流生效。
         sheet.style.transition = "";
-        void sheet.offsetHeight;
         sheet.style.transform = "";
     };
     const observer = new MutationObserver(() => {
