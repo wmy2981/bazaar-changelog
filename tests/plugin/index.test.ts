@@ -91,7 +91,7 @@ describe("onload", () => {
         expect(byTitle(plugin, "链接化引用").value).toBe("mobile");
         // 加速改成独立窗口：设置页里只有入口按钮
         expect(byTitle(plugin, "GitHub 加速").textContent).toBe("配置");
-        expect(byTitle(plugin, "移动端底部抽屉").checked).toBe(false);
+        expect(byTitle(plugin, "移动端底部抽屉").checked).toBe(true);
         expect(byTitle(plugin, "调试模式").checked).toBe(false);
     });
 
@@ -237,7 +237,7 @@ describe("onload", () => {
 
         await expect(plugin.onload()).resolves.toBeUndefined();
         expect(byTitle(plugin, "优先加载").value).toBe("releaseNotes");
-        expect(byTitle(plugin, "移动端底部抽屉").checked).toBe(false);
+        expect(byTitle(plugin, "移动端底部抽屉").checked).toBe(true);
     });
 
     it("令牌读不出来时当作没配", async () => {

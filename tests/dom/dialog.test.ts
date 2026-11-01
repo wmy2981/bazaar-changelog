@@ -766,14 +766,23 @@ describe("移动端底部抽屉", () => {
     const dialogOptions = () => (stubState.dialogs[0] as unknown as {options: Record<string, unknown>}).options;
     const sheetOf = () => requiredDialog().querySelector(".b3-dialog__container") as HTMLElement;
 
-    it("设置没打开时，移动端仍是普通弹窗", async () => {
+    it("设置里关掉时，移动端仍是普通弹窗", async () => {
         stubState.frontend = "mobile";
-        open();
+        open({settings: settings({mobileDrawer: false})});
         await expectBody("修了 #12");
 
         expect(requiredDialog().classList.contains("mobile-bottom-sheet-dialog")).toBe(false);
         expect(dialogOptions().width).toBe("92vw");
         expect(control("close")).not.toBeNull();
+    });
+
+    it("移动端默认就开抽屉，不用去设置里拨", async () => {
+        stubState.frontend = "mobile";
+        open();
+        await expectBody("修了 #12");
+
+        expect(requiredDialog().classList.contains("mobile-bottom-sheet-dialog")).toBe(true);
+        expect(sheetOf().classList.contains("mobile-bottom-sheet")).toBe(true);
     });
 
     it("打开后贴合屏幕两侧、没有关闭按钮", async () => {

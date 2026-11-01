@@ -62,7 +62,7 @@
   "githubTokenTip": "The token is stored encrypted in the plugin's private storage and is only sent with requests to api.github.com. Create one in <a href=\"https://github.com/settings/tokens\" target=\"_blank\" rel=\"noopener noreferrer\">GitHub's Developer settings</a>; reading public repositories only needs read-only access.",
   "tokenNeedsSecureContext": "This context has no Web Crypto, so the token cannot be stored encrypted; use the desktop app or https.",
   "mobileDrawer": "Mobile bottom sheet",
-  "mobileDrawerTip": "Show the changelog in SiYuan's native bottom sheet on mobile (experimental).",
+  "mobileDrawerTip": "Show the changelog in SiYuan's native bottom sheet on mobile.",
   "renderTest": "Rendering test cases",
   "debugMode": "Debug mode",
   "debugModeTip": "Print the plugin's debug log to the console."

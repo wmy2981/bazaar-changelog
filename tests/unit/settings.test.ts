@@ -85,10 +85,10 @@ describe("mergeSettings", () => {
         expect(mergeSettings({botReleaseNotesAsEmpty: 0}).botReleaseNotesAsEmpty).toBe(true);
     });
 
-    it("新功能默认关闭，只认真正的 true", () => {
-        expect(mergeSettings({}).mobileDrawer).toBe(false);
-        expect(mergeSettings({mobileDrawer: true}).mobileDrawer).toBe(true);
-        expect(mergeSettings({mobileDrawer: "yes"}).mobileDrawer).toBe(false);
+    it("移动端抽屉默认开启，只有明确存了 false 才关", () => {
+        expect(mergeSettings({}).mobileDrawer).toBe(true);
+        expect(mergeSettings({mobileDrawer: false}).mobileDrawer).toBe(false);
+        expect(mergeSettings({mobileDrawer: 0}).mobileDrawer).toBe(true);
     });
 
     it("链接化引用的样式只认三个取值，旧的开关迁移过来", () => {
