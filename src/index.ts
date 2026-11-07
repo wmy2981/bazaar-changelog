@@ -1,6 +1,7 @@
-import {getFrontend, Plugin, Setting, showMessage} from "siyuan";
+import {Plugin, Setting, showMessage} from "siyuan";
 import {openAccelerationDialog} from "./acceleration";
 import {observeBazaarReadme} from "./bazaarDom";
+import {isMobileFrontend} from "./frontend";
 import type {TI18n} from "./i18n";
 import {t} from "./i18n";
 import "./index.scss";
@@ -13,8 +14,6 @@ import {hasGithubToken, setGithubToken} from "./token";
 import {interceptBazaarUpdate} from "./update";
 
 const STORAGE_NAME = "settings";
-/** 只挂在插件自己的设置弹窗上，样式表据此关掉入场过渡（见 index.scss）。 */
-const SETTINGS_DIALOG_CLASS = "bazaar-settings-dialog";
 /** 令牌与它的钥匙分开存：设置文件被单独贴出来时不会连带泄漏令牌。 */
 const TOKEN_STORAGE_NAME = "githubToken";
 const TOKEN_KEY_STORAGE_NAME = "githubTokenKey";
@@ -24,26 +23,8 @@ const TOKEN_KEY_STORAGE_NAME = "githubTokenKey";
  * 重载后不会留下上一次的闭包。
  */
 export const RENDER_TEST_COMMAND = "bazaarChangelogRenderTest";
-
-/**
- * 移动端给插件自己的设置弹窗挂一个作用域类名，让它躲开入场那一帧的白闪。
- *
- * 思源的 `Setting` 把弹窗插进文档之后，要等 50ms 才加 `b3-dialog--open`，让面板从 `scale(.8)` +
- * `opacity: 0` 淡入。`opacity: 0` 的图层在移动端 App 的 WebView 里会被跳过绘制，等到过渡开始才
- * 补画，于是有一帧把「旧页面 + 半成品的弹窗层」合成到一起 —— 面板又接近满屏，看着就是整块白闪。
- * 类名让样式表（见 index.scss）把起点透明度抬到 .01：动画还是思源那一套，只是图层插进去就画好。
- */
-class SettingDialog extends Setting {
-    override open(name: string): void {
-        super.open(name);
-        const frontend = getFrontend();
-        if (frontend !== "mobile" && frontend !== "browser-mobile") {
-            return;
-        }
-        // 插件的类型声明里没有 dialog，运行时是有的；桌面端的设置窗口走异步挂载，这里还没有
-        (this as unknown as {dialog?: {element: HTMLElement}}).dialog?.element.classList.add(SETTINGS_DIALOG_CLASS);
-    }
-}
+/** 只挂在插件自己的设置弹窗容器上：样式表据此常驻图层提示，见 index.scss 的移动端浮层一节。 */
+const SETTINGS_DIALOG_CLASS = "bazaar-settings-dialog";
 
 export default class ReleaseNotePlugin extends Plugin {
     private settings: ISettings = {...DEFAULT_SETTINGS};
@@ -70,7 +51,7 @@ export default class ReleaseNotePlugin extends Plugin {
             readonly: Boolean(window.siyuan.config?.readonly),
         });
 
-        this.setting = new SettingDialog({
+        this.setting = new Setting({
             confirmCallback: () => {
                 void this.saveSettings();
             },
@@ -118,7 +99,6 @@ export default class ReleaseNotePlugin extends Plugin {
                 element.className = "b3-text-field fn__block";
                 element.placeholder = "ghp_… / github_pat_…";
                 element.value = this.token;
-                this.suppressOpenKeyboard(element);
                 this.tokenElement = element;
                 return element;
             },
@@ -161,6 +141,46 @@ export default class ReleaseNotePlugin extends Plugin {
         this.disposers.splice(0).forEach((dispose) => dispose());
         delete (window as unknown as Record<string, unknown>)[RENDER_TEST_COMMAND];
         debug("onunload: listeners removed");
+    }
+
+    /**
+     * 移动端打开设置面板：不自动聚焦输入控件，并给面板常驻图层 —— 两件事都是移动端 App 里
+     * 「打开设置面板会闪一下」的成因，只修一件不够。
+     *
+     * 宿主在同步的 `open()` 里聚焦 `input` / `textarea` 两次：`Dialog.bindInput()` 逐个控件先
+     * `focus()` 一次（那时元素还没插进对话框，事后 `blur()` 或按祖先节点判断都拦不住），
+     * `Setting.open()` 结尾再聚焦正文里第一个。移动端 `mobile/index.ts` 重写的 `focus` 不判
+     * `isConnected` 就经原生桥接唤起软键盘，键盘触发的 adjustResize 会改 WebView 高度、整页
+     * 重排，面板弹出那一帧就闪。这里只在打开这段时间按元素类型拦住，`open()` 返回立刻还原；
+     * 用户自己点控件不经过这段，照常能输入。
+     *
+     * 之后还有一层：入场过渡（`scale` / `opacity`）会临时建层、结束时再拆层，App 的 WebView
+     * 在拆层那一帧只能交出拆层前的旧纹理，面板正文于是残留一帧旧画面。打开类要等
+     * `TIMEOUT_OPENDIALOG`（50ms）才落下来，这里抢先给容器挂上私有类，样式表据此让容器和
+     * 滚动正文常驻图层（见 index.scss）；宿主的过渡与类切换时序一个都不动。
+     */
+    override openSetting() {
+        if (!isMobileFrontend()) {
+            super.openSetting();
+            return;
+        }
+        const proto = HTMLElement.prototype;
+        const originalFocus = proto.focus;
+        proto.focus = function (this: HTMLElement, options?: FocusOptions) {
+            // 对话框容器这类非输入控件的聚焦不会唤键盘，照常放行
+            if (!(this instanceof HTMLInputElement || this instanceof HTMLTextAreaElement)) {
+                originalFocus.call(this, options);
+            }
+        };
+        try {
+            super.openSetting();
+        } finally {
+            proto.focus = originalFocus;
+        }
+        // Setting.dialog 运行时存在，npm 包的类型声明里还没有它
+        const container = (this.setting as Setting & {dialog?: {element?: HTMLElement}})
+            .dialog?.element?.querySelector(".b3-dialog__container");
+        container?.classList.add(SETTINGS_DIALOG_CLASS);
     }
 
     /**
@@ -220,23 +240,6 @@ export default class ReleaseNotePlugin extends Plugin {
         element.value = this.settings.referenceLinkStyle;
         this.referencesElement = element;
         return element;
-    }
-
-    /**
-     * 思源构建插件设置弹窗时，会把每个 input/textarea 交给 dialog.bindInput()，
-     * 而 bindInput() 第一件事就是 focus()——这时元素还没插进 DOM。
-     * 移动端改写了 HTMLElement.prototype.focus()：只要 focus 到可输入元素（思源自己的
-     * canInput() 判定）就调原生 showKeyboard()，不看元素是否在文档里，所以打开设置面板
-     * 会直接弹出键盘。构建期间先标成 readonly 让 canInput() 判否，本轮任务结束再放开。
-     *
-     * 必须用 setAttribute 写成 "readonly"：3.7.x 判的是 getAttribute("readonly") === "readonly"，
-     * 只设 element.readOnly 会得到空字符串的 readonly 属性，在 3.7.x 上照样弹键盘。
-     */
-    private suppressOpenKeyboard(element: HTMLInputElement) {
-        element.setAttribute("readonly", "readonly");
-        setTimeout(() => {
-            element.removeAttribute("readonly");
-        }, 0);
     }
 
     private async saveSettings() {

@@ -118,30 +118,6 @@ describe("onload", () => {
         });
     });
 
-    it("移动端打开设置面板时给弹窗挂作用域类名，样式表据此关掉入场过渡", async () => {
-        stubState.frontend = "mobile";
-        const plugin = await createPlugin();
-        await plugin.onload();
-        const element = document.createElement("div");
-        (plugin.setting as any).dialog = {element};
-
-        plugin.setting.open("集市更新日志");
-
-        expect(element.classList.contains("bazaar-settings-dialog")).toBe(true);
-    });
-
-    it("桌面端的设置弹窗保持原样，不加那个类名", async () => {
-        stubState.frontend = "desktop";
-        const plugin = await createPlugin();
-        await plugin.onload();
-        const element = document.createElement("div");
-        (plugin.setting as any).dialog = {element};
-
-        plugin.setting.open("集市更新日志");
-
-        expect(element.classList.contains("bazaar-settings-dialog")).toBe(false);
-    });
-
     it("渲染测试窗口只挂在 window 上，且只在调试模式开着时可用", async () => {
         const quiet = await createPlugin();
         await quiet.onload();
@@ -240,16 +216,6 @@ describe("onload", () => {
         expect(warn).toHaveBeenCalled();
     });
 
-    it("文本框先标成 readonly，等本轮任务结束再放开", async () => {
-        const plugin = await createPlugin();
-        await plugin.onload();
-        const token = byTitle(plugin, "GitHub 令牌");
-        expect(token.getAttribute("readonly")).toBe("readonly");
-
-        await flush();
-        expect(token.hasAttribute("readonly")).toBe(false);
-    });
-
     it("读设置失败时按默认值启动", async () => {
         const plugin = await createPlugin();
         vi.spyOn(plugin, "loadData").mockImplementation(async (name: string) => {
@@ -275,6 +241,79 @@ describe("onload", () => {
 
         await expect(plugin.onload()).resolves.toBeUndefined();
         expect(byTitle(plugin, "GitHub 令牌").value).toBe("");
+    });
+});
+
+/**
+ * 移动端打开设置面板的两件事：不自动聚焦输入控件（否则软键盘把 WebView 挤小、整页重排），
+ * 以及给容器挂上图层预热的私有类（入场过渡拆层那一帧会交出旧画面）。宿主的打开路径
+ * 由测试桩对齐：`Plugin.openSetting()` → `Setting.open()`，内部按宿主顺序聚焦控件。
+ */
+describe("打开设置面板", () => {
+    const proto = HTMLElement.prototype;
+
+    it("移动端不聚焦任何输入控件，非输入控件照常能聚焦", async () => {
+        stubState.frontend = "mobile";
+        const plugin = await createPlugin();
+        await plugin.onload();
+        const token = byTitle(plugin, "GitHub 令牌");
+        const focusedDuringOpen: boolean[] = [];
+        // 宿主两次聚焦都在 open() 之内：这里让 Setting.open 的那次聚焦在拦截期间被记录下来
+        const openSpy = vi.spyOn((plugin.setting as any), "open").mockImplementation(function (this: any) {
+            token.focus();
+            focusedDuringOpen.push(document.activeElement === token);
+            const button = document.createElement("button");
+            document.body.append(button);
+            button.focus();
+            focusedDuringOpen.push(document.activeElement === button);
+        });
+
+        const originalFocus = proto.focus;
+        plugin.openSetting();
+
+        expect(openSpy).toHaveBeenCalledWith("更新日志");
+        // 输入框那次被拦住，按钮那次照常放行
+        expect(focusedDuringOpen).toEqual([false, true]);
+        expect(proto.focus).toBe(originalFocus);
+    });
+
+    it("移动端把私有类挂到容器上，正文靠它一起预热", async () => {
+        stubState.frontend = "mobile";
+        const plugin = await createPlugin();
+        await plugin.onload();
+        plugin.openSetting();
+
+        const dialog = (plugin.setting as any).dialog as {element: HTMLElement};
+        const container = dialog.element.querySelector(".b3-dialog__container") as HTMLElement;
+        expect(container.classList.contains("bazaar-settings-dialog")).toBe(true);
+        // 正文是容器里的 .b3-dialog__content，样式表按同一作用域选中它
+        expect(container.querySelector(".b3-dialog__content")).not.toBeNull();
+        // 打开的这段时间之后没留下拦截：面板里的控件照常可以聚焦
+        const token = byTitle(plugin, "GitHub 令牌");
+        token.focus();
+        expect(document.activeElement).toBe(token);
+    });
+
+    it("桌面端保持宿主行为，不加私有类", async () => {
+        stubState.frontend = "desktop";
+        const plugin = await createPlugin();
+        await plugin.onload();
+        plugin.openSetting();
+
+        const dialog = (plugin.setting as any).dialog as {element: HTMLElement};
+        const container = dialog.element.querySelector(".b3-dialog__container") as HTMLElement;
+        expect(container.classList.contains("bazaar-settings-dialog")).toBe(false);
+        // 宿主打开面板后会聚焦正文里第一个输入控件
+        expect(document.activeElement).toBe(byTitle(plugin, "识别空发行说明"));
+    });
+
+    it("宿主没留下弹窗对象时也不报错", async () => {
+        stubState.frontend = "mobile";
+        const plugin = await createPlugin();
+        await plugin.onload();
+        (plugin.setting as any).open = () => undefined;
+
+        expect(() => plugin.openSetting()).not.toThrow();
     });
 });
 

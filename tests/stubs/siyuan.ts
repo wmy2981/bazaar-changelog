@@ -95,6 +95,11 @@ export abstract class Plugin {
     uninstall(): Promise<void> | void {
         // 子类覆盖
     }
+
+    /** 宿主：设置面板的入口（集市里那个齿轮就调它）。 */
+    openSetting(): void {
+        this.setting.open(this.displayName || this.name);
+    }
 }
 
 export interface ISettingItem {
@@ -107,6 +112,8 @@ export interface ISettingItem {
 
 export class Setting {
     items: ISettingItem[] = [];
+    /** 宿主在打开面板时才建弹窗，插件打开后能从这上面拿到容器。 */
+    dialog?: Dialog;
     private readonly confirmCallback?: () => void;
 
     constructor(options: {confirmCallback?: () => void} = {}) {
@@ -117,8 +124,29 @@ export class Setting {
         this.items.push(options);
     }
 
-    open(_name: string) {
-        // 测试不需要真的开面板
+    /**
+     * 对齐宿主的 `Setting.open()`：建弹窗、按宿主顺序聚焦输入控件 —— 先逐个控件
+     * `focus()`（`Dialog.bindInput`，那时元素还没插进去），再聚焦正文里第一个。
+     * 移动端那两处聚焦会唤起软键盘，插件就是靠这个顺序验的。
+     */
+    open(name: string) {
+        const content = document.createElement("div");
+        content.className = "b3-dialog__content";
+        for (const item of this.items) {
+            const element = item.actionElement ?? item.createActionElement?.();
+            if (!element) {
+                continue;
+            }
+            item.actionElement = element;
+            if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+                element.focus();
+            }
+            content.append(element);
+        }
+        const dialog = new Dialog({title: name, content: ""});
+        dialog.element.querySelector(".b3-dialog__body")?.append(content);
+        this.dialog = dialog;
+        (content.querySelector("input, textarea") as HTMLElement | null)?.focus();
     }
 
     /** 测试辅助：模拟思源打开设置面板，把每个条目建成控件。 */

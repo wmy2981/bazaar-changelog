@@ -59,6 +59,9 @@ export const openAccelerationDialog = (options: IAccelerationDialogOptions) => {
 
     const pick = <T extends Element>(type: string): T =>
         dialog.element.querySelector(`[data-type="${type}"]`) as T;
+    // 容器自己也要挂类：入场过渡跑在 .b3-dialog__container 上，图层预热按这个类名生效
+    // （见 index.scss）。Dialog 的 containerClassName 还没进插件 API 的类型，直接补类名。
+    dialog.element.querySelector(".b3-dialog__container")?.classList.add(`${CLASS}-dialog`);
     const urlElement = pick<HTMLInputElement>("url");
     const invalidElement = pick<HTMLElement>("invalid");
     const switchElement = (name: string) => pick<HTMLInputElement>(name);
