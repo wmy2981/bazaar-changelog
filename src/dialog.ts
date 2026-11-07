@@ -1,10 +1,11 @@
-import {Dialog, getFrontend, showMessage} from "siyuan";
+import {Dialog, showMessage} from "siyuan";
 import {fetchChangelog} from "./changelog";
 import {commitURL, fetchCommits, shortSha} from "./commits";
 import type {ICommit} from "./commits";
 import {bindMobileDrawer} from "./drawer";
 import {emojiToUnicode} from "./emoji";
 import {escapeHTML} from "./escape";
+import {isMobileFrontend} from "./frontend";
 import {blobURL, classifyGitHubLink, commitsURL, compareWebURL, releaseURL, repoWebURL} from "./githublinks";
 import {fetchReleases, parseFullChangelogOnly, parseGithubRepo, usesAcceleration} from "./github";
 import type {IRelease, TFailureReason} from "./github";
@@ -72,7 +73,7 @@ const fitSelectWidth = (select: HTMLSelectElement) => {
 
 const openChangelogDialog = (options: IChangelogDialogOptions, repo: string) => {
     const i18n = options.i18n;
-    const isMobile = ["mobile", "browser-mobile"].includes(getFrontend());
+    const isMobile = isMobileFrontend();
     const confirmable = Boolean(options.onConfirm);
     /** 移动端默认用思源原生的下方抽屉展示；设置里关掉就退回通用弹窗。 */
     const drawer = isMobile && options.settings.mobileDrawer;
