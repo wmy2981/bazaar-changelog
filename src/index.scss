@@ -299,19 +299,6 @@
   }
 }
 
-// 移动端的插件设置弹窗沿用思源原生的入场：`scale(.8)` → 1、`opacity` 0 → 1，过渡值与缓动一个都
-// 不动，只把起点透明度从 0 抬到 .01。0 的图层在移动端 App 的 WebView 里会被跳过绘制，等到过渡跑
-// 起来才补画，于是合成出一帧「旧页面 + 半成品弹窗」—— 面板接近满屏，看着就是整块白闪；.01 肉眼
-// 看不出来，但图层插进文档那一刻就画好了。
-// 类名由 SettingDialog 挂上，只作用于本插件自己的弹窗，别挪成通用选择器。
-.bazaar-settings-dialog .b3-dialog__container {
-  will-change: opacity, transform;
-}
-
-.bazaar-settings-dialog:not(.b3-dialog--open) .b3-dialog__container {
-  opacity: .01;
-}
-
 // 集市包详情页「集市信息 - 版本」的值：与同页资源链接同色，做成可点开的按钮。
 .item__version-link {
   background-color: transparent;
