@@ -36,6 +36,7 @@ describe("渲染测试样例", () => {
             "> ",            // 引用
             "1. ",           // 有序列表
             "---",           // 分隔线
+            "<details><summary>", // 折叠块
             "![图标](assets/icon.png)", // 相对图片
             "#12",           // 本仓库引用
             "owner/repo#34", // 跨仓库引用
@@ -64,7 +65,11 @@ describe("openRenderTest", () => {
 
         await vi.waitFor(() => expect(bodyOf().textContent).toContain("渲染测试用例"));
         expect(bodyOf().textContent).toContain("修了 #12");
-        expect(stubState.fetchPostCalls[0].data.markdown).toBe(rendertest.RENDER_SAMPLE);
+        expect(String(stubState.fetchPostCalls[0].data.markdown)).toContain("# 渲染测试用例");
+        // 折叠块与正文分开渲染：主文档那一次请求里只剩占位符，标题与正文各走一次
+        expect(String(stubState.fetchPostCalls[0].data.markdown)).not.toContain("<details");
+        expect(stubState.fetchPostCalls.some((call) => String(call.data.markdown).includes("点开看折叠里的内容")))
+            .toBe(true);
     });
 
     it("引用照常链接化，指向插件自己的仓库", async () => {

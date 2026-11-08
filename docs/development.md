@@ -64,7 +64,25 @@
 - **emoji 短代码只在插件自己拼的文本里换**：发行说明与 CHANGELOG 走内核的 Lute，它默认就认
   `:tada:`；提交信息是纯文本，只能自己换。别名表整张打进包里，因为浏览器里拿不到内核那份 Lute，
   而给几十上百行提交逐条调内核接口不现实；认不出的别名原样留着，GitHub 也这样。
-- **弹窗里的代码块不做语法高亮**：要用就得自己加载内核的 highlight.js 与代码主题，收益不值这份复杂度。
+- **`<details>` 由插件自己拼**：内核的 Lute 不认原始 HTML，`<details>` 会被转义成一行文字。
+  所以先把折叠块挖出来、正文换成占位符，标题与正文各走一次内核，渲染完再按占位符换回去；
+  围栏代码块里的 `<details>` 只是示例，扫描时跳过；没有闭合标签时原样交给内核 ——
+  那本来就是一段文字，不该被当成折叠块。
+- **表格与代码块要自己补一层**：Lute 输出的是裸 `<table>` 与 `<pre><code>`，而 `.b3-typography`
+  自己带 `overflow: auto`、表格又按内容撑到 `max-content`，宽表格会把整块正文撑出横向滚动条，
+  左右滚动时标题、段落跟着一起跑。所以给每张表套一层自己的滚动容器，正文的 `overflow-x` 收在
+  `hidden`；代码块补上思源原生的 `.code-block`（主题里的底色与圆角按这个类走），并把它里面的
+  `code` 从 `.fn__code` 那套行内代码样式里摘出来 —— 不摘的话整段代码会变成一行一个 chip、还会
+ 按 `pre-wrap` 断行。两个滚动容器都要写 `flex: 0 0 auto`：`.b3-typography` 是 column flex，
+  滚动容器的自动最小尺寸是 0，内容一长就被压扁 —— 表格整个看不见、代码块只剩一行。
+- **代码块的高亮交给思源自己**：`ProtyleMethod.highlightRender(container)` 会按设置里的代码主题加载
+  highlight.js 的样式，并沿用 `codeLineWrap`、`codeLigatures` 这些开关 —— 插件另配一套只会和主题对不上。
+  它只认 `.b3-typography` 里的 `.code-block code`，语言从 `<pre data-language>` 读，而 Lute 把语言写在
+  `<code class="language-x">` 上，所以注入后要把语言挪到 `<pre>` 上、补上 `.code-block`（底色与圆角按
+  这个类走），再整块交给它。高亮后 `<code>` 多出 `.hljs`，`.fn__code` 那套行内代码样式就不再命中。
+  底色不能自己写死：亮色主题的灰底来自基础主题的 `.b3-typography .code-block`，暗色主题没有这条规则，
+  用的是代码主题自己的 `.code-block` 底色 —— 写死 `--b3-protyle-code-background` 会让暗色下永远是一块
+  灰的，和集市 README 的代码块对不上。
 - **提交记录用 compare 而不是自己过滤 `/commits`**：范围由用户选的两个版本决定，只有 compare 能直接
   给出「head 有而 base 没有」的集合；起点是「不限」时没有可比较的起点，才退回 `/commits`。
 - **两个接口的提交方向相反**：compare 旧的在前、`/commits` 新的在前，所以只有走 compare 时才反转，

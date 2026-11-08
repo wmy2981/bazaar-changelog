@@ -14,6 +14,8 @@ same dialog.
 - Confirm bazaar updates through the changelog dialog
 - Several selectable sources
 - Fall back to the CHANGELOG when the release notes are empty
+- `<details>` blocks, tables and code blocks in the release notes render as such; code highlighting
+  follows the code theme set in SiYuan
 - `#PR` / issue references and `@user` become GitHub links
 - Open the current content on GitHub in one click
 - GitHub acceleration
@@ -43,7 +45,6 @@ same dialog.
   fetched (the status code they return can be anything).
 - "Latest" and the version filtering both depend on the bazaar index, which is refreshed every 1–3
   hours.
-- Code blocks in the dialog are rendered as plain text, without syntax highlighting.
 - The CHANGELOG has this one entry and no second CDN behind it: when it cannot be fetched the dialog
   reports a timeout and offers "Fetch again".
 
