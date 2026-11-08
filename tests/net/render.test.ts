@@ -238,4 +238,16 @@ describe("applyMarkdownHTML", () => {
         expect(wrappers[0].parentElement).toBe(element);
         expect(element.querySelector("pre")?.classList.contains("code-block")).toBe(true);
     });
+
+    it("代码块的语言从 <code> 挪到 <pre data-language>，整块交给思源做高亮", () => {
+        const element = container();
+        applyMarkdownHTML(element, [
+            `<pre><code class="language-bash">npm ci</code></pre>`,
+            `<pre><code>plain</code></pre>`,
+        ].join(""), LINK_BASE);
+        const blocks = Array.from(element.querySelectorAll("pre"));
+        expect(blocks.map((block) => block.getAttribute("data-language"))).toEqual(["bash", null]);
+        expect(blocks.every((block) => block.classList.contains("code-block"))).toBe(true);
+        expect(stubState.highlightRenderCalls).toEqual([element]);
+    });
 });

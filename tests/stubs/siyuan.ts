@@ -8,7 +8,8 @@
  * - `Setting.addItem` 只登记，`createActionElement` 由测试调用 `render()` 时才执行，
  *   和思源打开设置面板时才建控件的行为一致；
  * - `Dialog` 真的往 `document.body` 里插节点，`destroy()` 立刻摘掉并回调，
- *   测试因此可以直接查询弹窗 DOM。
+ *   测试因此可以直接查询弹窗 DOM；
+ * - `ProtyleMethod.highlightRender` 只记下被要求高亮的容器，测试据此确认代码块交给了思源。
  *
  * 桩的可变状态挂在 `globalThis` 上：测试用 `vi.resetModules()` 拿干净的模块缓存，
  * 桩模块自己也会被重新实例化，状态放在模块作用域里会跟着丢。
@@ -26,6 +27,8 @@ interface IStubState {
     fetchPostHandler: (url: string, data: Record<string, unknown>, callback: (response: any) => void) => void;
     frontend: string;
     dialogs: any[];
+    /** 每次高亮渲染的容器，测试据此确认代码块交给了思源。 */
+    highlightRenderCalls: Element[];
 }
 
 const STATE_KEY = "__bazaarChangelogSiyuanStub__";
@@ -36,6 +39,7 @@ const createState = (): IStubState => ({
     fetchPostHandler: (_url, _data, callback) => callback({code: 0, data: {}}),
     frontend: "desktop",
     dialogs: [],
+    highlightRenderCalls: [],
 });
 
 export const stubState: IStubState =
@@ -216,6 +220,13 @@ export const fetchPost = (
 };
 
 export const getFrontend = (): string => stubState.frontend;
+
+/** 思源的高亮渲染：真身会加载 highlight.js 并改写代码块，桩只记下容器。 */
+export const ProtyleMethod = {
+    highlightRender(element: Element) {
+        stubState.highlightRenderCalls.push(element);
+    },
+};
 
 export const showMessage = (text: string) => {
     stubState.messages.push(text);

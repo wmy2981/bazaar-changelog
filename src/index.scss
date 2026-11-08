@@ -257,30 +257,25 @@
   overflow-y: hidden;
 }
 
-// 代码块：内核把围栏代码块输出成裸 <pre><code>，思源的排版只给 .code-block 底色，
-// 里面的 <code> 还会被 .fn__code 当成行内代码（chip 底色 + pre-wrap 断行）。
-// 这里补回代码块的样子：整块底色、等宽字体、横向滚动，内部 code 不再画行内底色。
-// 选择器带两层类，是为了压过 .b3-typography code:not(.hljs) 那条行内代码规则。
+// 代码块：内核把围栏代码块输出成裸 <pre><code>，render.ts 补上 .code-block 与 data-language 后
+// 交给思源自己的高亮渲染。底色、圆角、内边距、代码字体都走思源与代码主题那套原生规则 ——
+// 和集市 README 的代码块一样，插件不再自己配底色：亮色主题的灰底来自基础主题的
+// `.b3-typography .code-block`，暗色主题下则是代码主题自己的 `.code-block` 底色；
+// 写死成 --b3-protyle-code-background 的话，暗色里永远是一块灰的，跟 README 对不上。
+// 这里只补原生规则管不到的两件事：
+// - .b3-typography 是 column flex，滚动容器的自动最小尺寸是 0，代码块会被压成一行；
+// - 高亮落地前 <code> 还是 .fn__code 的行内代码样子（chip 底色 + pre-wrap 断行），先压回去。
 .bazaar-release-notes__body,
 .bazaar-render-test {
   pre.code-block {
-    background-color: var(--b3-protyle-code-background);
-    border-radius: var(--b3-border-radius);
     // 同 .bazaar-table：column flex 里的滚动容器会被压扁，代码块只能剩一行
     flex: 0 0 auto;
-    font-family: var(--b3-font-family-code);
-    font-size: 85%;
-    line-height: 1.5;
-    margin: 2px 0;
-    overflow-x: auto;
-    padding: 8px 12px;
-    tab-size: 4;
 
-    code {
+    > code:not(.hljs) {
       background-color: transparent;
-      font-family: inherit;
-      font-size: inherit;
-      padding: 0;
+      border-radius: 0;
+      // 1em 在 85% 字号下正好是高亮主题给 pre code.hljs 的 1em，高亮落地时不会跳一下
+      padding: 1em;
       white-space: pre;
       word-break: normal;
     }

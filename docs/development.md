@@ -75,7 +75,14 @@
   `code` 从 `.fn__code` 那套行内代码样式里摘出来 —— 不摘的话整段代码会变成一行一个 chip、还会
  按 `pre-wrap` 断行。两个滚动容器都要写 `flex: 0 0 auto`：`.b3-typography` 是 column flex，
   滚动容器的自动最小尺寸是 0，内容一长就被压扁 —— 表格整个看不见、代码块只剩一行。
-- **弹窗里的代码块不做语法高亮**：要用就得自己加载内核的 highlight.js 与代码主题，收益不值这份复杂度。
+- **代码块的高亮交给思源自己**：`ProtyleMethod.highlightRender(container)` 会按设置里的代码主题加载
+  highlight.js 的样式，并沿用 `codeLineWrap`、`codeLigatures` 这些开关 —— 插件另配一套只会和主题对不上。
+  它只认 `.b3-typography` 里的 `.code-block code`，语言从 `<pre data-language>` 读，而 Lute 把语言写在
+  `<code class="language-x">` 上，所以注入后要把语言挪到 `<pre>` 上、补上 `.code-block`（底色与圆角按
+  这个类走），再整块交给它。高亮后 `<code>` 多出 `.hljs`，`.fn__code` 那套行内代码样式就不再命中。
+  底色不能自己写死：亮色主题的灰底来自基础主题的 `.b3-typography .code-block`，暗色主题没有这条规则，
+  用的是代码主题自己的 `.code-block` 底色 —— 写死 `--b3-protyle-code-background` 会让暗色下永远是一块
+  灰的，和集市 README 的代码块对不上。
 - **提交记录用 compare 而不是自己过滤 `/commits`**：范围由用户选的两个版本决定，只有 compare 能直接
   给出「head 有而 base 没有」的集合；起点是「不限」时没有可比较的起点，才退回 `/commits`。
 - **两个接口的提交方向相反**：compare 旧的在前、`/commits` 新的在前，所以只有走 compare 时才反转，

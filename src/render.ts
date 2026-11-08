@@ -1,4 +1,4 @@
-import {fetchPost} from "siyuan";
+import {fetchPost, ProtyleMethod} from "siyuan";
 import {debug} from "./logger";
 
 /**
@@ -15,6 +15,8 @@ const SANITIZE_OPTIONS = {
 const TABLE_CLASS = "bazaar-table";
 /** 代码块沿用思源原生的 .code-block，好让主题里的底色与圆角生效。 */
 const CODE_BLOCK_CLASS = "code-block";
+/** 语言写在 `<code class="language-x">` 上，思源的高亮却从 `<pre data-language>` 读。 */
+const CODE_LANGUAGE = /(?:^|\s)language-(\S+)/;
 /** 插件自己拼出来的折叠块，样式见 index.scss 的 .bazaar-details。 */
 const DETAILS_CLASS = "bazaar-details";
 
@@ -197,7 +199,7 @@ export const markdownToHTML = async (markdown: string): Promise<string> => {
 
 /**
  * 消毒后写进容器，并把相对链接、相对图片补成仓库地址，链接一律新窗口打开。
- * 同时把表格套进自己的横向滚动容器、给代码块补上思源原生的类名（见 index.scss）。
+ * 同时把表格套进自己的横向滚动容器、给代码块补上思源原生的类名与语言，再交给思源做高亮。
  * 返回 false 表示 HTML 为空或当前环境没有 DOMPurify（调用方据此提示取不到内容）。
  */
 export const applyMarkdownHTML = (container: HTMLElement, html: string, linkBase: string): boolean => {
@@ -214,9 +216,16 @@ export const applyMarkdownHTML = (container: HTMLElement, html: string, linkBase
         table.replaceWith(wrapper);
         wrapper.append(table);
     });
-    // 内核输出的是裸 <pre><code>，补上 .code-block 才有主题里的底色与圆角
+    // 内核输出的是裸 <pre><code class="language-x">：补上 .code-block 才有主题里的底色与圆角，
+    // 语言从 <code> 挪到 <pre data-language>，思源的高亮渲染按这个属性取语言
     const codeBlocks = container.querySelectorAll("pre");
-    codeBlocks.forEach((block) => block.classList.add(CODE_BLOCK_CLASS));
+    codeBlocks.forEach((block) => {
+        block.classList.add(CODE_BLOCK_CLASS);
+        const language = block.querySelector("code")?.className.match(CODE_LANGUAGE);
+        if (language) {
+            block.setAttribute("data-language", language[1]);
+        }
+    });
     const links = container.querySelectorAll("a");
     const images = container.querySelectorAll("img");
     links.forEach((anchor) => {
@@ -233,6 +242,8 @@ export const applyMarkdownHTML = (container: HTMLElement, html: string, linkBase
             image.setAttribute("src", absolutize(src, linkBase));
         }
     });
+    // 高亮交给思源自己：代码主题、换行与连字都跟着设置走，不再由插件另配一套
+    ProtyleMethod.highlightRender(container);
     debug("markdown: injected", {
         htmlBytes: html.length,
         links: links.length,
