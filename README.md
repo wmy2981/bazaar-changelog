@@ -14,6 +14,7 @@ same dialog.
 - Confirm bazaar updates through the changelog dialog
 - Several selectable sources
 - Fall back to the CHANGELOG when the release notes are empty
+- `<details>` blocks, tables and code blocks in the release notes render as such
 - `#PR` / issue references and `@user` become GitHub links
 - Open the current content on GitHub in one click
 - GitHub acceleration

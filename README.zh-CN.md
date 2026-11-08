@@ -13,6 +13,7 @@
 - 更新改用更新日志弹窗确认
 - 多种可选来源
 - 发行说明为空时自动改看 CHANGELOG
+- 发行说明里的 `<details>` 折叠块、表格与代码块照常显示
 - #PR / Issue 与 @user 变成 GitHub 链接
 - 快速在 GitHub 中打开
 - GitHub 加速

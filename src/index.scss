@@ -74,6 +74,12 @@
     min-height: 0;
     overflow: auto;
     padding: 16px 24px;
+
+    // .b3-typography 自带 overflow: auto：宽表格会把整块正文撑出横向滚动条，
+    // 左右滚动时标题、段落跟着一起跑。横向交给表格与代码块自己滚，正文只滚纵向。
+    &.b3-typography {
+      overflow-x: hidden;
+    }
   }
 
   // 超时提示的第二行：不与主提示争注意力
@@ -238,6 +244,59 @@
 .bazaar-settings-dialog .b3-dialog__content,
 .bazaar-acceleration-dialog .b3-dialog__content {
   will-change: transform;
+}
+
+// 正文里的表格：内核只输出裸 <table>，宽度按内容撑到 max-content，窄屏上会顶出弹窗。
+// 套一层自己的滚动容器，只让表格那一块左右滚，正文本身不跟着跑（见 __body 的 overflow-x）。
+.bazaar-table {
+  // .b3-typography 是 column flex，滚动容器的自动最小尺寸是 0：不写这一句，
+  // 内容一长它就被压成 0 高，表格整个看不见。
+  flex: 0 0 auto;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+// 代码块：内核把围栏代码块输出成裸 <pre><code>，思源的排版只给 .code-block 底色，
+// 里面的 <code> 还会被 .fn__code 当成行内代码（chip 底色 + pre-wrap 断行）。
+// 这里补回代码块的样子：整块底色、等宽字体、横向滚动，内部 code 不再画行内底色。
+// 选择器带两层类，是为了压过 .b3-typography code:not(.hljs) 那条行内代码规则。
+.bazaar-release-notes__body,
+.bazaar-render-test {
+  pre.code-block {
+    background-color: var(--b3-protyle-code-background);
+    border-radius: var(--b3-border-radius);
+    // 同 .bazaar-table：column flex 里的滚动容器会被压扁，代码块只能剩一行
+    flex: 0 0 auto;
+    font-family: var(--b3-font-family-code);
+    font-size: 85%;
+    line-height: 1.5;
+    margin: 2px 0;
+    overflow-x: auto;
+    padding: 8px 12px;
+    tab-size: 4;
+
+    code {
+      background-color: transparent;
+      font-family: inherit;
+      font-size: inherit;
+      padding: 0;
+      white-space: pre;
+      word-break: normal;
+    }
+  }
+}
+
+// 发行说明里的 <details> 折叠块：内核不认原始 HTML，标签由 render.ts 自己拼。
+// 折叠交给浏览器，观感照 GitHub：正文色、常规字重、原生三角，点标题展开。
+.bazaar-details {
+  margin: 4px 0;
+
+  > summary {
+    color: var(--b3-theme-on-background);
+    cursor: pointer;
+    padding: 2px 0;
+  }
 }
 
 // 移动端底部抽屉：外观全借思源原生的 `.mobile-bottom-sheet-dialog` / `.mobile-bottom-sheet`，
