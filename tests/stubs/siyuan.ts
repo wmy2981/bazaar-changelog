@@ -164,9 +164,9 @@ export class Setting {
         });
     }
 
-    /** 测试辅助：模拟点「确定」。 */
+    /** 测试辅助：模拟点「确定」，返回确认回调的 Promise（宿主会忽略它）。 */
     triggerConfirm() {
-        this.confirmCallback?.();
+        return this.confirmCallback?.();
     }
 }
 

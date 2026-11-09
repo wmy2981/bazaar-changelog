@@ -55,7 +55,8 @@ const byTitle = (plugin: PluginInstance, title: string) => {
 };
 
 const confirm = async (plugin: PluginInstance) => {
-    (plugin.setting as any).triggerConfirm();
+    // 确认回调自己会把落盘的 Promise 交回来；等它写完，别靠固定次数的 flush 猜时序
+    await (plugin.setting as any).triggerConfirm();
     await flush();
 };
 
