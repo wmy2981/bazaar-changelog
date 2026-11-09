@@ -12,7 +12,7 @@ import type {ISettings} from "./settings";
 /**
  * 渲染测试样例：把插件要显示的各类写法都摆一遍 —— 行内强调、链接、代码（行内与围栏）、
  * 标题、列表、任务列表、表格、引用、分隔线、相对图片，`<details>` 折叠块，
- * 以及 #123、owner/repo#123、@user、裸链接与 `:tada:` 这类短代码。
+ * 以及 #123、owner/repo#123、@user、裸链接、Issue / PR 完整链接与 `:tada:` 这类短代码。
  * 围栏代码块里的同款写法故意放一份：那些不该被链接化。
  */
 export const RENDER_SAMPLE = `# 渲染测试用例
@@ -25,6 +25,8 @@ export const RENDER_SAMPLE = `# 渲染测试用例
 - 跨仓库引用 owner/repo#34
 - 提交者 @octocat
 - 裸链接 https://github.com/owner/repo/releases
+- 完整链接 https://github.com/owner/repo/pull/56
+- 本仓库完整链接 https://github.com/wmy2981/bazaar-changelog/issues/123
 - 表情短代码 :tada: :bug: :rocket:
 
 ## GFM 表格

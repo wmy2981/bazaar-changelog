@@ -13,9 +13,18 @@ const LANGUAGES: Record<string, string> = {
     version: "版本",
 };
 
+/**
+ * 纯函数测试用文件头的 `// @vitest-environment node` 跑在 node 里，没有 DOM。
+ * jsdom 每个文件都要建一次、在这台手机上要好几秒，能省就省。
+ */
+const hasDOM = typeof document !== "undefined";
+
 beforeEach(() => {
-    document.body.innerHTML = "";
     resetStubState();
+    if (!hasDOM) {
+        return;
+    }
+    document.body.innerHTML = "";
     (window as any).siyuan = {
         languages: {...LANGUAGES},
         dialogs: [],

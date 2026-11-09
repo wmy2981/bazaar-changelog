@@ -40,6 +40,11 @@ jobs:
           fi
           echo "version=$plugin_version" >> "$GITHUB_OUTPUT"
 
+      # lockfile 里的 resolved 指向 npmmirror；GitHub runner 上镜像偶发 500 会卡住安装，
+      # 这里把地址换成官方 registry 再装（版本与 integrity 不变）。
+      - name: Use the official registry
+        run: sed -i 's#https://registry.npmmirror.com#https://registry.npmjs.org#g' package-lock.json
+
       - name: Install dependencies
         run: npm ci
 

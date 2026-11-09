@@ -42,6 +42,7 @@ describe("渲染测试样例", () => {
             "owner/repo#34", // 跨仓库引用
             "@octocat",      // 用户
             "https://github.com/owner/repo/releases", // 裸链接
+            "https://github.com/owner/repo/pull/56", // Issue / PR 完整链接
             ":tada:",        // emoji 短代码
         ]) {
             expect(sample, syntax).toContain(syntax);
@@ -82,6 +83,11 @@ describe("openRenderTest", () => {
         expect(hrefs).toContain("https://github.com/owner/repo/issues/34");
         expect(hrefs).toContain("https://github.com/octocat");
         expect(hrefs).toContain("https://github.com/owner/repo/releases");
+        expect(hrefs).toContain("https://github.com/owner/repo/pull/56");
+        expect(hrefs).toContain(`${REPO}/issues/123`);
+        // 完整链接显示成引用：本仓库是 #123，别的仓库是 owner/repo#123
+        expect(bodyOf().textContent).toContain("owner/repo#56");
+        expect(bodyOf().textContent).toContain("#123");
     });
 
     it("链接化的观感跟着设置走", async () => {

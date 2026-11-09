@@ -52,9 +52,8 @@ export default class ReleaseNotePlugin extends Plugin {
         });
 
         this.setting = new Setting({
-            confirmCallback: () => {
-                void this.saveSettings();
-            },
+            // 把落盘返回的 Promise 交出去：宿主不关心，但测试要等它真的写完才能断言
+            confirmCallback: () => this.saveSettings(),
         });
         this.setting.addItem({
             title: t(this.texts(), "preferredSource"),
