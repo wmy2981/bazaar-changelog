@@ -30,6 +30,62 @@ describe("linkifyGitHub", () => {
         expect(hrefs(element)).toEqual(["https://github.com/other/project/issues/12"]);
     });
 
+    it("本仓库的 Issue / PR 完整链接显示成 #123", () => {
+        const element = container(
+            `<p>修了 https://github.com/owner/repo/issues/12 与 https://github.com/Owner/Repo/pull/34</p>`,
+        );
+        expect(linkifyGitHub(element, REPO, "mobile")).toBe(2);
+        expect(element.textContent).toBe("修了 #12 与 #34");
+        expect(hrefs(element)).toEqual([
+            "https://github.com/owner/repo/issues/12",
+            "https://github.com/Owner/Repo/pull/34",
+        ]);
+    });
+
+    it("别的仓库的 Issue / PR 完整链接显示成 owner/repo#123", () => {
+        const element = container(
+            `<p>见 https://github.com/other/project/issues/7 与 https://www.github.com/other/project/pull/8</p>`,
+        );
+        expect(linkifyGitHub(element, REPO, "mobile")).toBe(2);
+        expect(element.textContent).toBe("见 other/project#7 与 other/project#8");
+        expect(hrefs(element)).toEqual([
+            "https://github.com/other/project/issues/7",
+            "https://www.github.com/other/project/pull/8",
+        ]);
+    });
+
+    it("完整链接后面的路径、锚点与标点不影响缩写", () => {
+        const element = container(
+            `<p>https://github.com/owner/repo/pull/5/files#diff-1 与 https://github.com/other/project/issues/6.</p>`,
+        );
+        expect(linkifyGitHub(element, REPO, "mobile")).toBe(2);
+        expect(element.textContent).toBe("#5 与 other/project#6.");
+        expect(hrefs(element)).toEqual([
+            "https://github.com/owner/repo/pull/5/files#diff-1",
+            "https://github.com/other/project/issues/6",
+        ]);
+    });
+
+    it("跨仓库写法指向本仓库时也显示成 #123", () => {
+        const element = container("<p>修了 owner/repo#12 与 Owner/Repo#13</p>");
+        expect(linkifyGitHub(element, REPO, "mobile")).toBe(2);
+        expect(element.textContent).toBe("修了 #12 与 #13");
+        expect(hrefs(element)).toEqual([
+            "https://github.com/owner/repo/issues/12",
+            "https://github.com/owner/repo/issues/13",
+        ]);
+    });
+
+    it("不是 Issue / PR 的 GitHub 链接保持地址本身", () => {
+        const element = container(
+            `<p>https://github.com/owner/repo/releases/tag/v1.0.0 与 https://github.com/owner/repo/issues</p>`,
+        );
+        expect(linkifyGitHub(element, REPO, "mobile")).toBe(2);
+        expect(element.textContent).toBe(
+            "https://github.com/owner/repo/releases/tag/v1.0.0 与 https://github.com/owner/repo/issues",
+        );
+    });
+
     it("把 @user 变成用户主页", () => {
         const element = container("<p>谢谢 @octocat 和 @dev-name</p>");
         expect(linkifyGitHub(element, REPO, "mobile")).toBe(2);
