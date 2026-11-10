@@ -1,9 +1,9 @@
-import {fetchBazaarAvailable} from "./bazaar";
+import {fetchBazaarAvailable} from "../api/bazaar";
 import {installedVersion, marketVersion, sideRepoURL} from "./bazaarDom";
 import {openChangelog} from "./dialog";
-import type {TI18n} from "./i18n";
-import {debug, warn} from "./logger";
-import type {ISettings} from "./settings";
+import type {TI18n} from "../core/i18n";
+import {debug, warn} from "../core/logger";
+import type {ISettings} from "../core/settings";
 
 /** 集市里「更新」按钮与更新图标用的 data-type。 */
 const UPDATE_TYPE = "install-t";

@@ -1,5 +1,5 @@
 import {fetchPost, getFrontend} from "siyuan";
-import {debug} from "./logger";
+import {debug} from "../core/logger";
 
 export interface IBazaarAvailable {
     repoURL: string;

@@ -9,7 +9,8 @@ import zhCN from "../../src/i18n/zh-CN.json";
  * 文案文件的守门测试：两种语言必须一一对应，代码里用到的 key 必须真的存在。
  * 漏一条在界面上会直接显示成 key 本身，只有跑起来点到那一步才会发现。
  */
-const sources = readdirSync("src")
+// 递归读 src 下所有 .ts：目录分层后文案调用散在各层，只扫顶层会漏掉大半 key
+const sources = readdirSync("src", {recursive: true, encoding: "utf8"})
     .filter((name) => name.endsWith(".ts"))
     .map((name) => readFileSync(join("src", name), "utf8"));
 

@@ -59,7 +59,7 @@ npm install
 npm run typecheck   # static checks
 npm run build       # writes dist/ and package.zip
 npm run icon        # assets/icon.svg -> assets/icon.png
-node scripts/build-emoji-map.mjs                  # regenerate src/emoji-map.ts (gemoji's alias table)
+node scripts/build-emoji-map.mjs                  # regenerate src/render/emoji-map.ts (gemoji's alias table)
 node scripts/build-preview-css.mjs <siyuan repo>   # regenerate assets/preview.css
 npm run preview     # assets/preview.html -> assets/preview.png (needs npx playwright install chromium once)
 ```

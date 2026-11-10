@@ -1,6 +1,6 @@
 // @vitest-environment node
 import {describe, expect, it} from "vitest";
-import {t} from "../../src/i18n";
+import {t} from "../../src/core/i18n";
 
 describe("t", () => {
     it("取到字符串文案", () => {

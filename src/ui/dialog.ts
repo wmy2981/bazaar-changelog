@@ -1,21 +1,21 @@
 import {Dialog, showMessage} from "siyuan";
-import {fetchChangelog} from "./changelog";
-import {commitURL, fetchCommits, shortSha} from "./commits";
-import type {ICommit} from "./commits";
+import {fetchChangelog} from "../api/changelog";
+import {commitURL, fetchCommits, shortSha} from "../api/commits";
+import type {ICommit} from "../api/commits";
 import {bindMobileDrawer} from "./drawer";
-import {emojiToUnicode} from "./emoji";
-import {escapeHTML} from "./escape";
-import {isMobileFrontend} from "./frontend";
+import {emojiToUnicode} from "../render/emoji";
+import {escapeHTML} from "../core/escape";
+import {isMobileFrontend} from "../core/frontend";
 import {blobURL, classifyGitHubLink, commitsURL, compareWebURL, releaseURL, repoWebURL} from "./githublinks";
-import {fetchReleases, parseFullChangelogOnly, parseGithubRepo, usesAcceleration} from "./github";
-import type {IRelease, TFailureReason} from "./github";
-import {t} from "./i18n";
-import type {TI18n} from "./i18n";
-import {debug} from "./logger";
-import {applyMarkdownHTML, markdownToHTML} from "./render";
-import {linkifyGitHub} from "./references";
-import type {ISettings, TChangelogSource} from "./settings";
-import {compareVersion, isSameVersion} from "./version";
+import {fetchReleases, parseFullChangelogOnly, parseGithubRepo, usesAcceleration} from "../api/github";
+import type {IRelease, TFailureReason} from "../api/github";
+import {t} from "../core/i18n";
+import type {TI18n} from "../core/i18n";
+import {debug} from "../core/logger";
+import {applyMarkdownHTML, markdownToHTML} from "../render/render";
+import {linkifyGitHub} from "../render/references";
+import type {ISettings, TChangelogSource} from "../core/settings";
+import {compareVersion, isSameVersion} from "../core/version";
 
 const CLASS = "bazaar-release-notes";
 /** 首次加载等这么久。国内直连 GitHub 常常拿不到，等不到就给「重新获取」。 */

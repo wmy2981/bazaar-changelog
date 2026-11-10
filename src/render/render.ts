@@ -1,5 +1,5 @@
 import {fetchPost, ProtyleMethod} from "siyuan";
-import {debug} from "./logger";
+import {debug} from "../core/logger";
 
 /**
  * 与集市 README 同一套消毒规则：禁 iframe，且只放行 http(s)/mailto 之类的协议。

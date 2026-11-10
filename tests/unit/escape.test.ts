@@ -1,6 +1,6 @@
 // @vitest-environment node
 import {describe, expect, it} from "vitest";
-import {escapeHTML} from "../../src/escape";
+import {escapeHTML} from "../../src/core/escape";
 
 describe("escapeHTML", () => {
     it("转义拼进 HTML 的五个字符", () => {

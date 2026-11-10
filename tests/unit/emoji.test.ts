@@ -1,6 +1,6 @@
 // @vitest-environment node
 import {describe, expect, it} from "vitest";
-import {emojiToUnicode} from "../../src/emoji";
+import {emojiToUnicode} from "../../src/render/emoji";
 
 describe("emojiToUnicode", () => {
     it("把短代码换成表情", () => {

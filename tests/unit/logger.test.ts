@@ -1,7 +1,7 @@
 // @vitest-environment node
 import {beforeEach, describe, expect, it, vi} from "vitest";
 
-type LoggerModule = typeof import("../../src/logger");
+type LoggerModule = typeof import("../../src/core/logger");
 
 let logger: LoggerModule;
 let logSpy: ReturnType<typeof vi.spyOn>;
@@ -9,7 +9,7 @@ let warnSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(async () => {
     vi.resetModules();
-    logger = await import("../../src/logger");
+    logger = await import("../../src/core/logger");
     logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
     warnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
 });

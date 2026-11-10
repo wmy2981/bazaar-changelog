@@ -2,8 +2,8 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {abortable, mockResponse, stubFetch} from "../helpers/network";
 import {acceleration, settings} from "../helpers/settings";
 
-type CommitsModule = typeof import("../../src/commits");
-type TokenModule = typeof import("../../src/token");
+type CommitsModule = typeof import("../../src/api/commits");
+type TokenModule = typeof import("../../src/core/token");
 
 let commits: CommitsModule;
 let token: TokenModule;
@@ -29,8 +29,8 @@ const rawList = [...rawCommits].reverse();
 
 beforeEach(async () => {
     vi.resetModules();
-    commits = await import("../../src/commits");
-    token = await import("../../src/token");
+    commits = await import("../../src/api/commits");
+    token = await import("../../src/core/token");
 });
 
 describe("commitURL / shortSha", () => {
@@ -187,7 +187,7 @@ describe("fetchCommits 的响应", () => {
             .toEqual({status: "error", reason: {kind: "http", status: 403}});
 
         vi.resetModules();
-        commits = await import("../../src/commits");
+        commits = await import("../../src/api/commits");
         stubFetch(() => mockResponse({}, {status: 502}));
         expect(await commits.fetchCommits("owner/repo", {base: "a", head: "b"}, settings(), 3000))
             .toEqual({status: "error", reason: {kind: "http", status: 502}});

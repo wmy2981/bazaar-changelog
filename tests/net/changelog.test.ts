@@ -2,7 +2,7 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {abortable, deferred, mockResponse, stubFetch} from "../helpers/network";
 import {acceleration, settings} from "../helpers/settings";
 
-type ChangelogModule = typeof import("../../src/changelog");
+type ChangelogModule = typeof import("../../src/api/changelog");
 
 let changelog: ChangelogModule;
 
@@ -12,7 +12,7 @@ const DOC_URL = "https://raw.githubusercontent.com/owner/repo/HEAD/doc/CHANGELOG
 
 beforeEach(async () => {
     vi.resetModules();
-    changelog = await import("../../src/changelog");
+    changelog = await import("../../src/api/changelog");
 });
 
 describe("fetchChangelog", () => {
@@ -55,7 +55,7 @@ describe("fetchChangelog", () => {
             .toEqual({status: "timeout", reason: {kind: "http", status: 503}});
 
         vi.resetModules();
-        changelog = await import("../../src/changelog");
+        changelog = await import("../../src/api/changelog");
         stubFetch(() => Promise.reject(new Error("offline")));
         expect(await changelog.fetchChangelog("owner/repo", settings(), 3000))
             .toEqual({status: "timeout", reason: {kind: "network"}});

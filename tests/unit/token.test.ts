@@ -1,13 +1,13 @@
 // @vitest-environment node
 import {beforeEach, describe, expect, it, vi} from "vitest";
 
-type TokenModule = typeof import("../../src/token");
+type TokenModule = typeof import("../../src/core/token");
 
 let token: TokenModule;
 
 beforeEach(async () => {
     vi.resetModules();
-    token = await import("../../src/token");
+    token = await import("../../src/core/token");
 });
 
 describe("令牌只发给官方接口", () => {

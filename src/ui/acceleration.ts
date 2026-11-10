@@ -1,10 +1,10 @@
 import {Dialog} from "siyuan";
-import {escapeHTML} from "./escape";
-import {normalizeAccelerationURL} from "./github";
-import {t} from "./i18n";
-import type {TI18n} from "./i18n";
-import {debug} from "./logger";
-import type {IGithubAcceleration} from "./settings";
+import {escapeHTML} from "../core/escape";
+import {normalizeAccelerationURL} from "../api/github";
+import {t} from "../core/i18n";
+import type {TI18n} from "../core/i18n";
+import {debug} from "../core/logger";
+import type {IGithubAcceleration} from "../core/settings";
 
 const CLASS = "bazaar-acceleration";
 

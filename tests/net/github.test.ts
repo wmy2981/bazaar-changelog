@@ -2,16 +2,16 @@ import {beforeEach, describe, expect, it, vi} from "vitest";
 import {abortable, mockResponse, stubFetch} from "../helpers/network";
 import {acceleration, settings} from "../helpers/settings";
 
-type GithubModule = typeof import("../../src/github");
-type TokenModule = typeof import("../../src/token");
+type GithubModule = typeof import("../../src/api/github");
+type TokenModule = typeof import("../../src/core/token");
 
 let github: GithubModule;
 let token: TokenModule;
 
 beforeEach(async () => {
     vi.resetModules();
-    github = await import("../../src/github");
-    token = await import("../../src/token");
+    github = await import("../../src/api/github");
+    token = await import("../../src/core/token");
 });
 
 describe("parseGithubRepo", () => {

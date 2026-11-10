@@ -1,7 +1,7 @@
 import {resolveGithubURL, usesAcceleration} from "./github";
 import type {TFailureReason} from "./github";
-import {debug} from "./logger";
-import type {ISettings} from "./settings";
+import {debug} from "../core/logger";
+import type {ISettings} from "../core/settings";
 
 /** 我们自己到点取消请求时抛出来的：那是这次等够了，不是入口有问题。 */
 const isAbort = (error: unknown): boolean => (error as {name?: unknown} | null)?.name === "AbortError";

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import {describe, expect, it} from "vitest";
-import {DEFAULT_ACCELERATION, DEFAULT_SETTINGS, mergeSettings} from "../../src/settings";
+import {DEFAULT_ACCELERATION, DEFAULT_SETTINGS, mergeSettings} from "../../src/core/settings";
 
 const acceleration = (overrides: Partial<typeof DEFAULT_ACCELERATION> = {}) => ({
     ...DEFAULT_ACCELERATION,
