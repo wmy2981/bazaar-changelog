@@ -1,17 +1,17 @@
 import {Plugin, Setting, showMessage} from "siyuan";
-import {openAccelerationDialog} from "./acceleration";
-import {observeBazaarReadme} from "./bazaarDom";
-import {isMobileFrontend} from "./frontend";
-import type {TI18n} from "./i18n";
-import {t} from "./i18n";
+import {openAccelerationDialog} from "./ui/acceleration";
+import {observeBazaarReadme} from "./ui/bazaarDom";
+import {isMobileFrontend} from "./core/frontend";
+import type {TI18n} from "./core/i18n";
+import {t} from "./core/i18n";
 import "./index.scss";
-import {debug, setDebugEnabled, warn} from "./logger";
-import {openRenderTest} from "./rendertest";
-import {createSecretKey, decryptSecret, encryptSecret, exportSecretKey, importSecretKey} from "./secret";
-import {DEFAULT_SETTINGS, mergeSettings} from "./settings";
-import type {IGithubAcceleration, ISettings} from "./settings";
-import {hasGithubToken, setGithubToken} from "./token";
-import {interceptBazaarUpdate} from "./update";
+import {debug, setDebugEnabled, warn} from "./core/logger";
+import {openRenderTest} from "./ui/rendertest";
+import {createSecretKey, decryptSecret, encryptSecret, exportSecretKey, importSecretKey} from "./core/secret";
+import {DEFAULT_SETTINGS, mergeSettings} from "./core/settings";
+import type {IGithubAcceleration, ISettings} from "./core/settings";
+import {hasGithubToken, setGithubToken} from "./core/token";
+import {interceptBazaarUpdate} from "./ui/update";
 
 const STORAGE_NAME = "settings";
 /** 令牌与它的钥匙分开存：设置文件被单独贴出来时不会连带泄漏令牌。 */

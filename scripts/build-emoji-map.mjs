@@ -1,4 +1,4 @@
-// 生成 src/emoji-map.ts：GitHub 的 emoji 短代码表（`:smile:` → 😄）。
+// 生成 src/render/emoji-map.ts：GitHub 的 emoji 短代码表（`:smile:` → 😄）。
 //
 // 数据取 gemoji 的 db/emoji.json —— GitHub 自己渲染提交与发行说明用的就是这份表，
 // 所以插件里换出来的表情和用户在网页上看到的一致。表有两千来条、还会随 Unicode 更新，
@@ -10,7 +10,7 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 const SOURCE = "https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json";
-const target = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "emoji-map.ts");
+const target = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "src", "render", "emoji-map.ts");
 
 const local = process.argv[2];
 const raw = local ? fs.readFileSync(local, "utf8") : await (await fetch(SOURCE)).text();
@@ -48,4 +48,4 @@ export const EMOJI_ALIASES = \`${table}\`;
 `;
 
 fs.writeFileSync(target, output);
-console.log(`src/emoji-map.ts done: ${pairs.size} aliases, ${Buffer.byteLength(output)} bytes`);
+console.log(`src/render/emoji-map.ts done: ${pairs.size} aliases, ${Buffer.byteLength(output)} bytes`);

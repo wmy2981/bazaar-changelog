@@ -14,15 +14,15 @@ const mocks = vi.hoisted(() => ({
     fetchCommits: vi.fn(),
 }));
 
-vi.mock("../../src/github", async (importOriginal) => {
-    const actual = await importOriginal<typeof import("../../src/github")>();
+vi.mock("../../src/api/github", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("../../src/api/github")>();
     return {...actual, fetchReleases: mocks.fetchReleases};
 });
 
-vi.mock("../../src/changelog", () => ({fetchChangelog: mocks.fetchChangelog}));
+vi.mock("../../src/api/changelog", () => ({fetchChangelog: mocks.fetchChangelog}));
 
-vi.mock("../../src/commits", async (importOriginal) => {
-    const actual = await importOriginal<typeof import("../../src/commits")>();
+vi.mock("../../src/api/commits", async (importOriginal) => {
+    const actual = await importOriginal<typeof import("../../src/api/commits")>();
     return {...actual, fetchCommits: mocks.fetchCommits};
 });
 
@@ -51,7 +51,7 @@ const commits = () => [
         avatar: "",
     },
 ];
-type OpenChangelog = typeof import("../../src/dialog").openChangelog;
+type OpenChangelog = typeof import("../../src/ui/dialog").openChangelog;
 let openChangelog: OpenChangelog;
 
 const dialogEl = () => document.querySelector(".b3-dialog") as HTMLElement | null;
@@ -111,7 +111,7 @@ beforeEach(async () => {
     stubState.fetchPostHandler = (_url, data, callback) => {
         callback({code: 0, data: {html: `<p>${String(data.markdown)}</p>`}});
     };
-    ({openChangelog} = await import("../../src/dialog"));
+    ({openChangelog} = await import("../../src/ui/dialog"));
 });
 
 describe("打开与关闭", () => {

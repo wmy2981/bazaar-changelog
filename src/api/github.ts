@@ -1,6 +1,6 @@
-import {debug} from "./logger";
-import type {ISettings, TGithubRequest} from "./settings";
-import {githubAPIHeaders, willAuthorize} from "./token";
+import {debug} from "../core/logger";
+import type {ISettings, TGithubRequest} from "../core/settings";
+import {githubAPIHeaders, willAuthorize} from "../core/token";
 
 export interface IRelease {
     tag: string;

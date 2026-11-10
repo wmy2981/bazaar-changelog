@@ -1,8 +1,8 @@
 import {resolveGithubURL, usesAcceleration} from "./github";
 import type {TFailureReason} from "./github";
-import {debug} from "./logger";
-import type {ISettings} from "./settings";
-import {githubAPIHeaders, willAuthorize} from "./token";
+import {debug} from "../core/logger";
+import type {ISettings} from "../core/settings";
+import {githubAPIHeaders, willAuthorize} from "../core/token";
 
 /** 列表里的一条提交。`message` 保留全文，弹窗只折叠展示首行。 */
 export interface ICommit {

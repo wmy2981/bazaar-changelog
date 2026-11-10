@@ -1,18 +1,18 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from "vitest";
 import {createSide} from "../helpers/dom";
 import {flush} from "../helpers/network";
-import {DEFAULT_SETTINGS} from "../../src/settings";
-import type {TI18n} from "../../src/i18n";
+import {DEFAULT_SETTINGS} from "../../src/core/settings";
+import type {TI18n} from "../../src/core/i18n";
 
 const mocks = vi.hoisted(() => ({
     openChangelog: vi.fn(),
     fetchBazaarAvailable: vi.fn(),
 }));
 
-vi.mock("../../src/dialog", () => ({openChangelog: mocks.openChangelog}));
-vi.mock("../../src/bazaar", () => ({fetchBazaarAvailable: mocks.fetchBazaarAvailable}));
+vi.mock("../../src/ui/dialog", () => ({openChangelog: mocks.openChangelog}));
+vi.mock("../../src/api/bazaar", () => ({fetchBazaarAvailable: mocks.fetchBazaarAvailable}));
 
-import {interceptBazaarUpdate} from "../../src/update";
+import {interceptBazaarUpdate} from "../../src/ui/update";
 
 const I18N: TI18n = {update: "更新"};
 

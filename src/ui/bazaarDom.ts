@@ -1,9 +1,9 @@
 import {openChangelog} from "./dialog";
-import {escapeHTML} from "./escape";
-import {t} from "./i18n";
-import type {TI18n} from "./i18n";
-import {debug} from "./logger";
-import type {ISettings} from "./settings";
+import {escapeHTML} from "../core/escape";
+import {t} from "../core/i18n";
+import type {TI18n} from "../core/i18n";
+import {debug} from "../core/logger";
+import type {ISettings} from "../core/settings";
 
 const README_ID = "configBazaarReadme";
 const LINK_TYPE = "release-notes";

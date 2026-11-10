@@ -1,4 +1,4 @@
-import {debug} from "./logger";
+import {debug} from "../core/logger";
 
 /**
  * 移动端的「更新日志」用思源原生的下方抽屉展示：外观直接借 `.mobile-bottom-sheet-dialog` /

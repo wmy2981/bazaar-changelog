@@ -50,7 +50,7 @@ npm install
 npm run typecheck   # 静态检查
 npm run build       # 产出 dist/ 与 package.zip
 npm run icon        # assets/icon.svg -> assets/icon.png
-node scripts/build-emoji-map.mjs                  # 重新生成 src/emoji-map.ts（gemoji 的别名表）
+node scripts/build-emoji-map.mjs                  # 重新生成 src/render/emoji-map.ts（gemoji 的别名表）
 node scripts/build-preview-css.mjs <思源仓库路径>   # 重生成 assets/preview.css
 npm run preview     # assets/preview.html -> assets/preview.png（首次需 npx playwright install chromium）
 ```

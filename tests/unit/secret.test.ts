@@ -2,7 +2,7 @@
 import {webcrypto} from "node:crypto";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 
-type SecretModule = typeof import("../../src/secret");
+type SecretModule = typeof import("../../src/core/secret");
 
 let secret: SecretModule;
 
@@ -10,7 +10,7 @@ beforeEach(async () => {
     // jsdom 的 crypto 不一定有 SubtleCrypto，用 Node 的实现保证测试环境一致
     vi.stubGlobal("crypto", webcrypto);
     vi.resetModules();
-    secret = await import("../../src/secret");
+    secret = await import("../../src/core/secret");
 });
 
 describe("令牌加密", () => {

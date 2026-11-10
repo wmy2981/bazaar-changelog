@@ -1,5 +1,5 @@
-import {debug} from "./logger";
-import type {TReferenceLinkStyle} from "./settings";
+import {debug} from "../core/logger";
+import type {TReferenceLinkStyle} from "../core/settings";
 
 /**
  * 正文里值得变成链接的几样东西，按优先级排列：

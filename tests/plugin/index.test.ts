@@ -1,7 +1,7 @@
 import {webcrypto} from "node:crypto";
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import zhCN from "../../src/i18n/zh-CN.json";
-import {DEFAULT_ACCELERATION, DEFAULT_SETTINGS} from "../../src/settings";
+import {DEFAULT_ACCELERATION, DEFAULT_SETTINGS} from "../../src/core/settings";
 import {flush} from "../helpers/network";
 import {stubState} from "../stubs/siyuan";
 
@@ -10,8 +10,8 @@ const mocks = vi.hoisted(() => ({
     observeBazaarReadme: vi.fn(),
 }));
 
-vi.mock("../../src/update", () => ({interceptBazaarUpdate: mocks.interceptBazaarUpdate}));
-vi.mock("../../src/bazaarDom", () => ({observeBazaarReadme: mocks.observeBazaarReadme}));
+vi.mock("../../src/ui/update", () => ({interceptBazaarUpdate: mocks.interceptBazaarUpdate}));
+vi.mock("../../src/ui/bazaarDom", () => ({observeBazaarReadme: mocks.observeBazaarReadme}));
 
 type PluginClass = typeof import("../../src/index").default;
 type PluginInstance = InstanceType<PluginClass>;
@@ -198,7 +198,7 @@ describe("onload", () => {
 
     it("解出落盘的令牌填进输入框", async () => {
         const plugin = await createPlugin();
-        const {createSecretKey, encryptSecret, exportSecretKey} = await import("../../src/secret");
+        const {createSecretKey, encryptSecret, exportSecretKey} = await import("../../src/core/secret");
         const key = await createSecretKey();
         await plugin.saveData("githubToken", await encryptSecret("ghp_stored", key));
         await plugin.saveData("githubTokenKey", await exportSecretKey(key));
@@ -491,7 +491,7 @@ describe("令牌的保存", () => {
         expect(typeof rawKey).toBe("string");
         expect(byTitle(plugin, "GitHub 令牌").value).toBe("ghp_new");
 
-        const {decryptSecret, importSecretKey} = await import("../../src/secret");
+        const {decryptSecret, importSecretKey} = await import("../../src/core/secret");
         expect(await decryptSecret(String(blob), await importSecretKey(String(rawKey)))).toBe("ghp_new");
     });
 
@@ -507,7 +507,7 @@ describe("令牌的保存", () => {
 
     it("清空令牌会删掉密文与钥匙", async () => {
         const plugin = await createPlugin();
-        const {createSecretKey, encryptSecret, exportSecretKey} = await import("../../src/secret");
+        const {createSecretKey, encryptSecret, exportSecretKey} = await import("../../src/core/secret");
         const key = await createSecretKey();
         await plugin.saveData("githubToken", await encryptSecret("ghp_stored", key));
         await plugin.saveData("githubTokenKey", await exportSecretKey(key));
@@ -523,12 +523,12 @@ describe("令牌的保存", () => {
 
     it("删不掉密文时也把内存里的令牌清掉", async () => {
         const plugin = await createPlugin();
-        const {createSecretKey, encryptSecret, exportSecretKey} = await import("../../src/secret");
+        const {createSecretKey, encryptSecret, exportSecretKey} = await import("../../src/core/secret");
         const key = await createSecretKey();
         await plugin.saveData("githubToken", await encryptSecret("ghp_stored", key));
         await plugin.saveData("githubTokenKey", await exportSecretKey(key));
         await plugin.onload();
-        const {hasGithubToken} = await import("../../src/token");
+        const {hasGithubToken} = await import("../../src/core/token");
         expect(hasGithubToken()).toBe(true);
         // 存储已经删不动了：清理失败不该把这次清空整体算作失败
         vi.spyOn(plugin, "removeData").mockRejectedValue(new Error("disk locked"));
@@ -613,7 +613,7 @@ describe("令牌的保存", () => {
         vi.spyOn(console, "warn").mockImplementation(() => undefined);
         const plugin = await createPlugin();
         await plugin.onload();
-        const {createSecretKey, encryptSecret, exportSecretKey} = await import("../../src/secret");
+        const {createSecretKey, encryptSecret, exportSecretKey} = await import("../../src/core/secret");
         const original = plugin.saveData.bind(plugin);
         vi.spyOn(plugin, "saveData").mockImplementation(async (name: string, value: unknown) => {
             if (name === "githubToken") {

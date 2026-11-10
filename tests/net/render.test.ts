@@ -1,6 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {stubState} from "../stubs/siyuan";
-import {applyMarkdownHTML, markdownToHTML} from "../../src/render";
+import {applyMarkdownHTML, markdownToHTML} from "../../src/render/render";
 
 const LINK_BASE = "https://github.com/owner/repo/blob/HEAD/";
 

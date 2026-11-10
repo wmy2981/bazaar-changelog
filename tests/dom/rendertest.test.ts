@@ -3,7 +3,7 @@ import zhCN from "../../src/i18n/zh-CN.json";
 import {settings} from "../helpers/settings";
 import {stubState} from "../stubs/siyuan";
 
-type RenderTestModule = typeof import("../../src/rendertest");
+type RenderTestModule = typeof import("../../src/ui/rendertest");
 
 let rendertest: RenderTestModule;
 
@@ -15,7 +15,7 @@ beforeEach(async () => {
     stubState.fetchPostHandler = (_url, data, callback) => {
         callback({code: 0, data: {html: `<p>${String(data.markdown)}</p>`}});
     };
-    rendertest = await import("../../src/rendertest");
+    rendertest = await import("../../src/ui/rendertest");
 });
 
 const dialogEl = () => document.querySelector(".b3-dialog") as HTMLElement | null;

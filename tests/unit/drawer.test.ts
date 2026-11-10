@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-import {bindMobileDrawer} from "../../src/drawer";
+import {bindMobileDrawer} from "../../src/ui/drawer";
 
 /** jsdom 没有触摸事件，自己造一个只带插件实际读到的字段的事件。 */
 const fireTouch = (element: Element, type: string, y: number) => {

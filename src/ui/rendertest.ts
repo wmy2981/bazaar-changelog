@@ -1,13 +1,13 @@
 import {Dialog} from "siyuan";
-import {escapeHTML} from "./escape";
-import {parseGithubRepo} from "./github";
+import {escapeHTML} from "../core/escape";
+import {parseGithubRepo} from "../api/github";
 import {repoWebURL} from "./githublinks";
-import {t} from "./i18n";
-import type {TI18n} from "./i18n";
-import {debug} from "./logger";
-import {linkifyGitHub} from "./references";
-import {applyMarkdownHTML, markdownToHTML} from "./render";
-import type {ISettings} from "./settings";
+import {t} from "../core/i18n";
+import type {TI18n} from "../core/i18n";
+import {debug} from "../core/logger";
+import {linkifyGitHub} from "../render/references";
+import {applyMarkdownHTML, markdownToHTML} from "../render/render";
+import type {ISettings} from "../core/settings";
 
 /**
  * 渲染测试样例：把插件要显示的各类写法都摆一遍 —— 行内强调、链接、代码（行内与围栏）、

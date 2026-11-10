@@ -1,5 +1,5 @@
 import {describe, expect, it} from "vitest";
-import {linkifyGitHub} from "../../src/references";
+import {linkifyGitHub} from "../../src/render/references";
 
 const REPO = "owner/repo";
 

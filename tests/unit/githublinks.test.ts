@@ -7,7 +7,7 @@ import {
     compareWebURL,
     releaseURL,
     repoWebURL,
-} from "../../src/githublinks";
+} from "../../src/ui/githublinks";
 
 const REPO = "owner/repo";
 

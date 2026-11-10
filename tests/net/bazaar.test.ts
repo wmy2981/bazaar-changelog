@@ -1,13 +1,13 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
 import {stubState} from "../stubs/siyuan";
 
-type BazaarModule = typeof import("../../src/bazaar");
+type BazaarModule = typeof import("../../src/api/bazaar");
 
 let bazaar: BazaarModule;
 
 beforeEach(async () => {
     vi.resetModules();
-    bazaar = await import("../../src/bazaar");
+    bazaar = await import("../../src/api/bazaar");
 });
 
 describe("fetchBazaarAvailable", () => {

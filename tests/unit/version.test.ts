@@ -1,6 +1,6 @@
 // @vitest-environment node
 import {describe, expect, it} from "vitest";
-import {compareVersion, isSameVersion} from "../../src/version";
+import {compareVersion, isSameVersion} from "../../src/core/version";
 
 describe("compareVersion", () => {
     it("相等返回 0", () => {
